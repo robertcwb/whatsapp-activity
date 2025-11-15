@@ -6,7 +6,7 @@
     <title>Configuração WhatsApp Sender</title>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Postmonger local -->
+    <!-- Postmonger local no mesmo repo -->
     <script src="postmonger.js"></script>
 
     <style>
@@ -76,8 +76,8 @@
 
     <div class="form-group">
         <label for="phoneField">Campo do Telefone *</label>
-        <input type="text" id="phoneField" placeholder="Ex: PhoneNumber" value="PhoneNumber" />
-        <div class="help-text">Nome da coluna na Data Extension que contém o número de telefone</div>
+        <input type="text" id="phoneField" placeholder="Ex: MobileNumber" value="MobileNumber" />
+        <div class="help-text">Nome da coluna na Data Extension que contém o número de telefone (ex: MobileNumber)</div>
     </div>
 
     <div class="form-group">
@@ -112,83 +112,99 @@
 
 <script type="text/javascript">
     var connection = new Postmonger.Session();
-    var payload = {};
+    var activity = {};
 
-    $(window).ready(function () {
-        connection.trigger("ready");
-        connection.trigger("requestedInteraction");
+    // Quando o iframe carregar
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('UI carregada, disparando READY');
+        connection.trigger('ready');
     });
 
-    connection.on("initActivity", function (data) {
-        if (data) {
-            payload = data;
-            var inArguments =
-                payload["arguments"] &&
-                payload["arguments"].execute &&
-                payload["arguments"].execute.inArguments;
+    // Journey manda payload inicial
+    connection.on('initActivity', function (payload) {
+        console.log('initActivity payload:', payload);
+        activity = payload || {};
 
-            if (inArguments && inArguments.length > 0) {
-                var args = inArguments[0];
+        try {
+            var inArgs =
+                activity.arguments &&
+                activity.arguments.execute &&
+                activity.arguments.execute.inArguments &&
+                activity.arguments.execute.inArguments[0];
 
-                if (args.to) {
-                    var phoneMatch = args.to.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
-                    if (phoneMatch) $("#phoneField").val(phoneMatch[1]);
+            if (inArgs) {
+                if (inArgs.to) {
+                    var phoneMatch = inArgs.to.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
+                    if (phoneMatch) {
+                        $('#phoneField').val(phoneMatch[1]);
+                    }
                 }
-
-                if (args.templateName && !args.templateName.includes("{{")) {
-                    $("#templateName").val(args.templateName);
+                if (inArgs.templateName && !inArgs.templateName.includes('{{')) {
+                    $('#templateName').val(inArgs.templateName);
                 }
-
-                if (args.languageCode && !args.languageCode.includes("{{")) {
-                    $("#languageCode").val(args.languageCode);
+                if (inArgs.languageCode && !inArgs.languageCode.includes('{{')) {
+                    $('#languageCode').val(inArgs.languageCode);
                 }
-
-                if (args.var1) {
-                    var var1Match = args.var1.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
-                    if (var1Match) $("#var1Field").val(var1Match[1]);
+                if (inArgs.var1) {
+                    var v1 = inArgs.var1.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
+                    if (v1) $('#var1Field').val(v1[1]);
                 }
-
-                if (args.var2) {
-                    var var2Match = args.var2.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
-                    if (var2Match) $("#var2Field").val(var2Match[1]);
+                if (inArgs.var2) {
+                    var v2 = inArgs.var2.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
+                    if (v2) $('#var2Field').val(v2[1]);
                 }
             }
+        } catch (e) {
+            console.error('Erro ao processar inArguments:', e);
         }
-        connection.trigger("updateButton", { button: "next", enabled: true });
+
+        // Habilita o botão Next/Done
+        connection.trigger('updateButton', { button: 'next', enabled: true });
     });
 
-    connection.on("clickedNext", function () {
-        var phoneField = $("#phoneField").val();
-        var templateName = $("#templateName").val();
-        var languageCode = $("#languageCode").val();
-        var var1Field = $("#var1Field").val();
-        var var2Field = $("#var2Field").val();
+    // Clique em Done/Next no Journey
+    connection.on('clickedNext', function () {
+        console.log('clickedNext');
+
+        var phoneField = $('#phoneField').val().trim();
+        var templateName = $('#templateName').val().trim();
+        var languageCode = $('#languageCode').val();
+        var var1Field = $('#var1Field').val().trim();
+        var var2Field = $('#var2Field').val().trim();
 
         if (!phoneField || !templateName || !languageCode) {
-            alert("Por favor, preencha todos os campos obrigatórios (*)");
+            alert('Por favor, preencha Campo do Telefone, Nome do Template e Código do Idioma.');
             return;
         }
 
         var inArguments = {
-            to: "{{Contact.Attribute.DataExtension." + phoneField + "}}",
+            to: '{{Contact.Attribute.DataExtension.' + phoneField + '}}',
             templateName: templateName,
             languageCode: languageCode
         };
 
         if (var1Field) {
-            inArguments.var1 = "{{Contact.Attribute.DataExtension." + var1Field + "}}";
+            inArguments.var1 = '{{Contact.Attribute.DataExtension.' + var1Field + '}}';
         }
         if (var2Field) {
-            inArguments.var2 = "{{Contact.Attribute.DataExtension." + var2Field + "}}";
+            inArguments.var2 = '{{Contact.Attribute.DataExtension.' + var2Field + '}}';
         }
 
-        payload["arguments"] = payload["arguments"] || {};
-        payload["arguments"].execute = payload["arguments"].execute || {};
-        payload["arguments"].execute.inArguments = [inArguments];
-        payload["metaData"] = payload["metaData"] || {};
-        payload["metaData"].isConfigured = true;
+        // Monta o payload final
+        activity.arguments = activity.arguments || {};
+        activity.arguments.execute = activity.arguments.execute || {};
+        activity.arguments.execute.inArguments = [inArguments];
 
-        connection.trigger("updateActivity", payload);
+        activity.metaData = activity.metaData || {};
+        activity.metaData.isConfigured = true;
+
+        console.log('🔵 Enviando updateActivity:', JSON.stringify(activity, null, 2));
+
+        // Desabilita o botão pra evitar duplo clique
+        connection.trigger('updateButton', { button: 'next', enabled: false });
+
+        // Notifica o Journey Builder que está configurado
+        connection.trigger('updateActivity', activity);
     });
 </script>
 </body>
