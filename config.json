@@ -1,6 +1,6 @@
 {
   "workflowApiVersion": "1.1",
-  "key": "d2866b6d-9c5d-4ecf-b423-3e84dcc3997e",
+  "key": "90083f01-7bb6-4ee7-bbc1-716133ae5917",
   "name": "Enviar WhatsApp (Salesforce)",
   "description": "Envia um template do WhatsApp usando uma classe Apex do Salesforce.",
   "type": "REST",
