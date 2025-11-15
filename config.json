@@ -1,7 +1,7 @@
 {
   "workflowApiVersion": "1.1",
   "key": "90083f01-7bb6-4ee7-bbc1-716133ae5917",
-  "name": "Enviar WhatsApp (Salesforce)",
+  "name": "Send WhatsApp (Salesforce)",
   "description": "Envia um template do WhatsApp usando uma classe Apex do Salesforce.",
   "type": "REST",
 
@@ -25,12 +25,11 @@
     "execute": {
       "inArguments": [
         {
-          "to": "{{Contact.Attribute.DataExtension.PhoneNumber}}",
+          "to": "{{Contact.Attribute.DataExtension.MobileNumber}}",
           "templateName": "{{Contact.Attribute.DataExtension.TemplateName}}",
           "languageCode": "{{Contact.Attribute.DataExtension.LanguageCode}}",
           "var1": "{{Contact.Attribute.DataExtension.Var1}}",
-          "var2": "{{Contact.Attribute.DataExtension.Var2}}",
-          "var3": "{{Contact.Attribute.DataExtension.Var3}}"
+          "var2": "{{Contact.Attribute.DataExtension.Var2}}"
         }
       ],
       "outArguments": [],
@@ -45,15 +44,17 @@
   },
 
   "configurationArguments": {
-    "applicationExtensionKey": "d3ada757-82b2-463f-bf27-a15c51368e3e"
-  },
-
-  "wizardSteps": [
-    {
-      "label": "Configuração",
-      "key": "step1"
+    "applicationExtensionKey": "d3ada757-82b2-463f-bf27-a15c51368e3e",
+    "save": {
+      "url": "https://robertcwb.github.io/whatsapp-activity/config.json"
+    },
+    "publish": {
+      "url": "https://robertcwb.github.io/whatsapp-activity/config.json"
+    },
+    "validate": {
+      "url": "https://robertcwb.github.io/whatsapp-activity/config.json"
     }
-  ],
+  },
 
   "userInterfaces": {
     "configModal": {
@@ -61,58 +62,6 @@
       "height": 650,
       "width": 1000,
       "fullscreen": false
-    }
-  },
-
-  "schema": {
-    "arguments": {
-      "execute": {
-        "inArguments": [
-          {
-            "to": {
-              "dataType": "Phone",
-              "isNullable": false,
-              "direction": "in"
-            }
-          },
-          {
-            "templateName": {
-              "dataType": "Text",
-              "isNullable": false,
-              "direction": "in"
-            }
-          },
-          {
-            "languageCode": {
-              "dataType": "Text",
-              "isNullable": false,
-              "direction": "in"
-            }
-          },
-          {
-            "var1": {
-              "dataType": "Text",
-              "isNullable": true,
-              "direction": "in"
-            }
-          },
-          {
-            "var2": {
-              "dataType": "Text",
-              "isNullable": true,
-              "direction": "in"
-            }
-          },
-          {
-            "var3": {
-              "dataType": "Text",
-              "isNullable": true,
-              "direction": "in"
-            }
-          }
-        ],
-        "outArguments": []
-      }
     }
   }
 }
