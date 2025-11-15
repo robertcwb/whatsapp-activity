@@ -1,0 +1,118 @@
+{
+  "workflowApiVersion": "1.1",
+  "key": "d2866b6d-9c5d-4ecf-b423-3e84dcc3997e",
+  "name": "Enviar WhatsApp (Salesforce)",
+  "description": "Envia um template do WhatsApp usando uma classe Apex do Salesforce.",
+  "type": "REST",
+
+  "lang": {
+    "en-US": {
+      "name": "Send WhatsApp (Salesforce)",
+      "description": "Sends a WhatsApp template using a Salesforce Apex class."
+    },
+    "pt-BR": {
+      "name": "Enviar WhatsApp (Salesforce)",
+      "description": "Envia um template do WhatsApp usando uma classe Apex do Salesforce."
+    }
+  },
+
+  "metaData": {
+    "icon": "images/icon.png",
+    "category": "message"
+  },
+
+  "arguments": {
+    "execute": {
+      "inArguments": [
+        {
+          "to": "{{Contact.Attribute.DataExtension.PhoneNumber}}",
+          "templateName": "{{Contact.Attribute.DataExtension.TemplateName}}",
+          "languageCode": "{{Contact.Attribute.DataExtension.LanguageCode}}",
+          "var1": "{{Contact.Attribute.DataExtension.Var1}}",
+          "var2": "{{Contact.Attribute.DataExtension.Var2}}",
+          "var3": "{{Contact.Attribute.DataExtension.Var3}}"
+        }
+      ],
+      "outArguments": [],
+      "url": "https://consorcioservopa.my.salesforce.com/services/apexrest/wa/send",
+      "verb": "POST",
+      "body": "",
+      "header": "",
+      "format": "json",
+      "useJwt": false,
+      "timeout": 10000
+    }
+  },
+
+  "configurationArguments": {
+    "applicationExtensionKey": "d3ada757-82b2-463f-bf27-a15c51368e3e"
+  },
+
+  "wizardSteps": [
+    {
+      "label": "Configuração",
+      "key": "step1"
+    }
+  ],
+
+  "userInterfaces": {
+    "configModal": {
+      "url": "https://robertcwb.github.io/whatsapp-activity/index.html",
+      "height": 650,
+      "width": 1000,
+      "fullscreen": false
+    }
+  },
+
+  "schema": {
+    "arguments": {
+      "execute": {
+        "inArguments": [
+          {
+            "to": {
+              "dataType": "Phone",
+              "isNullable": false,
+              "direction": "in"
+            }
+          },
+          {
+            "templateName": {
+              "dataType": "Text",
+              "isNullable": false,
+              "direction": "in"
+            }
+          },
+          {
+            "languageCode": {
+              "dataType": "Text",
+              "isNullable": false,
+              "direction": "in"
+            }
+          },
+          {
+            "var1": {
+              "dataType": "Text",
+              "isNullable": true,
+              "direction": "in"
+            }
+          },
+          {
+            "var2": {
+              "dataType": "Text",
+              "isNullable": true,
+              "direction": "in"
+            }
+          },
+          {
+            "var3": {
+              "dataType": "Text",
+              "isNullable": true,
+              "direction": "in"
+            }
+          }
+        ],
+        "outArguments": []
+      }
+    }
+  }
+}
