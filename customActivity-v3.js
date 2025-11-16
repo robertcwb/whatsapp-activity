@@ -103,11 +103,13 @@ function onSave() {
     // Ex: {{Event.DEAudience-xxx.PhoneNumber}}
     var toToken = '{{' + phoneKey + '}}';
 
-    var inArgs = [{
+   var inArgs = [{
         to: toToken,
         templateName: template,
-        languageCode: langCode
+        languageCode: langCode,
+        apiKey: '7a8e3bd0f4514d0e8a6bb31c41a79c32' // mesma chave que você definiu no Apex
     }];
+
 
     if (!activityData.arguments) {
         activityData.arguments = {};
