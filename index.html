@@ -1,64 +1,63 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <title>Teste WhatsApp Activity</title>
+  <meta charset="UTF-8" />
+  <title>Teste WhatsApp Activity</title>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="postmonger.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="postmonger.js"></script>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-        .info {
-            padding: 15px;
-            border-radius: 4px;
-            background: #e8f4fd;
-            border-left: 4px solid #0176d3;
-        }
-    </style>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .info {
+      padding: 15px;
+      border-radius: 4px;
+      background: #e8f4fd;
+      border-left: 4px solid #0176d3;
+    }
+  </style>
 </head>
 <body>
-    <h2>🔧 Teste de Configuração da Activity</h2>
-    <div class="info">
-        <p>Se você conseguir clicar em <strong>Done</strong> no Journey e o modal fechar,
-        significa que o handshake com o Journey Builder está funcionando.</p>
-    </div>
+  <h2>🔧 Teste de Configuração da Activity</h2>
+  <div class="info">
+    <p>Se o modal fechar ao clicar em <strong>Done</strong>, o handshake com o Journey Builder está OK.</p>
+  </div>
 
-    <script>
-        var connection = new Postmonger.Session();
-        var activity = {};
+  <script>
+    var connection = new Postmonger.Session();
+    var activity = {};
 
-        console.log("🔵 index.html carregado, enviando READY...");
+    // 1) Registramos os handlers ANTES de mandar o READY
+    connection.on("initActivity", function (payload) {
+      console.log("✅ initActivity recebido:", payload);
+      activity = payload || {};
 
-        // Quando o iframe carrega
-        document.addEventListener("DOMContentLoaded", function () {
-            connection.trigger("ready");
-        });
+      connection.trigger("updateButton", {
+        button: "next",
+        enabled: true
+      });
+    });
 
-        // Quando o Journey manda os dados iniciais
-        connection.on("initActivity", function (payload) {
-            console.log("✅ initActivity recebido:", payload);
-            activity = payload || {};
-            connection.trigger("updateButton", { button: "next", enabled: true });
-        });
+    connection.on("requestedInteraction", function (data) {
+      console.log("ℹ️ requestedInteraction:", data);
+    });
 
-        // Quando o usuário clica em Done
-        connection.on("clickedNext", function () {
-            console.log("🟢 clickedNext recebido, enviando updateActivity...");
+    connection.on("clickedNext", function () {
+      console.log("🟢 clickedNext recebido, enviando updateActivity...");
 
-            // Só marca como configurado, sem mexer em inArguments
-            activity.metaData = activity.metaData || {};
-            activity.metaData.isConfigured = true;
+      activity.metaData = activity.metaData || {};
+      activity.metaData.isConfigured = true;
 
-            // Desabilita o botão para evitar clique duplo
-            connection.trigger("updateButton", { button: "next", enabled: false });
+      connection.trigger("updateButton", { button: "next", enabled: false });
+      connection.trigger("updateActivity", activity);
+    });
 
-            // Entrega a activity de volta para o Journey
-            connection.trigger("updateActivity", activity);
-        });
-    </script>
+    // 2) Só depois que tudo está registrado, disparamos o READY
+    document.addEventListener("DOMContentLoaded", function () {
+      console.log("🔵 index.html carregado, enviando READY...");
+      connection.trigger("ready");
+      connection.trigger("requestedInteraction");
+    });
+  </script>
 </body>
 </html>
