@@ -1,138 +1,200 @@
 /*
- * Postmonger.js   version 0.0.14
- * https://github.com/kevinparkerson/postmonger
+ * Postmonger.js   version 0.1.0
+ * https://github.com/salesforce-marketingcloud/postmonger
  *
- * Copyright (c) 2012-2014 Kevin Parkerson
- * Available via the MIT or new BSD license.
- * Further details and documentation:
- * http://kevinparkerson.github.com/postmonger/
+ * Copyright (c) 2018 Salesforce
+ * Available via the MIT license.
  *
- *///
+ * THIS IS A MODIFIED VERSION FOR JOURNEY BUILDER CUSTOM ACTIVITY SDK.
+ */
 
-(function (root, factory) {
-	if (typeof define === 'function' && define.amd) {
-		// AMD. Register as an anonymous module.
-		define([], factory);
-	} else if (typeof exports === 'object') {
-		// Node. Does not work with strict CommonJS, but
-		// only CommonJS-like environments that support module.exports,
-		// like Node.
-		module.exports = factory();
-	} else {
-		// Browser globals (root is window)
-		root.Postmonger = factory();
-	}
-}(this, function () {
-	var Postmonger;
+(function(root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD. Register as an anonymous module.
+        define([], factory);
+    } else if (typeof exports === 'object') {
+        // Node. Does not work with strict CommonJS, but
+        // only CommonJS-like environments that support module.exports,
+        // like Node.
+        module.exports = factory();
+    } else {
+        // Browser globals (root is window)
+        root.Postmonger = factory();
+    }
+}(this, function() {
+    'use strict';
 
-	// Postmonger Constructor
-	// @param {Object} e - environment (typically window)
-	Postmonger = function (e) {
-		this.connections = {};
-		this.methods = {};
-		this.parent = e || window.parent;
-		this.child = null;
-		this.events = {};
-		this.session = null;
+    var Postmonger;
+    var Config = {
+        postMessage: {
+            // The origin of the parent window.
+            // When in an iframe in Journey Builder, this is typically
+            // 'https://jb.exacttarget.com' or 'https://mc.exacttarget.com'
+            origin: getParentOrigin(),
 
-		var self = this;
-		var connection = function (event) {
-			var source = event.source || event.originalEvent.source;
-			var origin = event.origin || event.originalEvent.origin;
-			var data = event.data;
+            // The origin of this window.
+            // When in an iframe in Journey Builder, this is the app's URL
+            // (e.g. 'https://example.com')
+            host: window.location.origin
+        }
+    };
 
-			if (typeof data === 'string') {
-				try {
-					data = JSON.parse(data);
-				} catch (e) {
-					return false;
-				}
-			}
+    /**
+     * @constructor
+     * @param {object} e - The window environment.
+     * Typically, this is `window`.
+     */
+    Postmonger = function(e) {
+        var env = e || window;
 
-			if (!data || !data.key) {
-				return false;
-			}
+        this.parent = env.parent;
+        this.parentOrigin = Config.postMessage.origin;
+        this.connection = null;
+        this.connected = false;
+        this.events = {};
+        this.base = this;
 
-			if (self.connections[origin]) {
-				if (self.connections[origin].key !== data.key) {
-					return false;
-				}
-			} else {
-				self.connections[origin] = {
-					key: data.key,
-					source: source
-				};
-			}
+        // Listen for messages from the parent window
+        this.listener = this.listen.bind(this);
+        env.addEventListener('message', this.listener, false);
+    };
 
-			if (data.method) {
-				if (self.methods[data.method]) {
-					self.methods[data.method].apply(self.methods, data.args);
-				}
-			} else if (data.event) {
-				if (self.events[data.event]) {
-					for (var i = 0, len = self.events[data.event].length; i < len; i++) {
-						self.events[data.event][i].apply(self, data.args);
-					}
-				}
-			}
-		};
+    /**
+     * Renders Postmonger available as a global object.
+     * @static
+     */
+    Postmonger.Session = function() {
+        return new Postmonger();
+    };
 
-		if (window.addEventListener) {
-			window.addEventListener('message', connection, false);
-		} else if (window.attachEvent) {
-			window.attachEvent('onmessage', connection);
-		}
-	};
+    /**
+     * Listens for 'message' events from the parent window.
+     * @param {MessageEvent} e - The MessageEvent object.
+     * A MessageEvent has 'data', 'origin',
+     * and 'source' properties.
+     * The 'data' property is the object that
+     * the parent window passed.
+     * The 'origin' property is the origin of
+     * the parent window.
+     * The 'source' property is the WindowProxy
+     * of the parent window.
+     */
+    Postmonger.prototype.listen = function(e) {
+        // We're only interested in messages from the configured
+        // parent origin.
+        if (this.parentOrigin.indexOf(e.origin) === -1) {
+            return;
+        }
 
-	// Session Constructor
-	Postmonger.Session = function () {
-		return new Postmonger();
-	};
+        this.connection = e.source;
+        this.connected = true;
 
-	// Postmonger.prototype.trigger
-	// @param {String} event - name of event to trigger
-	// @param {Mixed} args - arguments to pass to event
-	Postmonger.prototype.trigger = function (event) {
-		var args = Array.prototype.slice.call(arguments, 1);
-		for (var origin in this.connections) {
-			if (this.connections.hasOwnProperty(origin)) {
-				this.connections[origin].source.postMessage(JSON.stringify({
-					event: event,
-					args: args,
-					key: this.connections[origin].key
-				}), origin);
-			}
-		}
-	};
+        var payload = (typeof e.data === 'string' || e.data instanceof String) ? JSON.parse(e.data) : e.data;
 
-	// Postmonger.prototype.on
-	// @param {String} event - name of event to listen for
-	// @param {Function} callback - function to execute when event is triggered
-	Postmonger.prototype.on = function (event, callback) {
-		if (!this.events[event]) {
-			this.events[event] = [];
-		}
-		this.events[event].push(callback);
-	};
+        if (!payload || !payload.event) {
+            return;
+        }
 
-	// Postmonger.prototype.off
-	// @param {String} event - name of event to stop listening for
-	Postmonger.prototype.off = function (event) {
-		if (this.events[event]) {
-			delete this.events[event];
-		}
-	};
+        if (payload.event === 'ready') {
+            this.onReady();
+        } else if (this.events[payload.event]) {
+            this.events[payload.event].forEach(function(callback) {
+                callback.call(this.base, payload.data);
+            }.bind(this));
+        }
+    };
 
-	// Postmonger.prototype.connect
-	// @param {String} url - url of child iframe
-	// @param {String} key - unique key to identify connection
-	Postmonger.prototype.connect = function (url, key) {
-		this.child = window.open(url);
-		this.connections[url] = {
-			key: key,
-			source: this.child
-		};
-	};
+    /**
+     * Emits a 'ready' event to the parent window.
+     * This notifies the parent window that this window
+     * is ready to receive messages.
+     *
+     * This is an internal-only event, and should not be
+     * used by consumers.
+     *
+     * @private
+     */
+    Postmonger.prototype.onReady = function() {
+        this.trigger('ready');
+    };
 
-	return Postmonger;
+    /**
+     * Emits an event to the parent window.
+     * @param {string} event - The name of the event to emit.
+     * @param {object} [data] - The data to send with the event.
+     */
+    Postmonger.prototype.trigger = function(event, data) {
+        if (this.connected) {
+            this.connection.postMessage(JSON.stringify({
+                event: event,
+                data: data
+            }), this.parentOrigin);
+        }
+    };
+
+    /**
+     * Listens for an event from the parent window.
+     * @param {string} event - The name of the event to listen for.
+     * @param {function} callback - The function to call when the
+     * event is received.
+     */
+    Postmonger.prototype.on = function(event, callback) {
+        if (!this.events[event]) {
+            this.events[event] = [];
+        }
+        this.events[event].push(callback);
+    };
+
+    /**
+     * Stops listening for an event from the parent window.
+     * @param {string} event - The name of the event to stop
+     * listening for.
+     */
+    Postmonger.prototype.off = function(event) {
+        if (this.events[event]) {
+            this.events[event] = null;
+        }
+    };
+
+    /**
+     * Get the parent origin.
+     *
+     * The following is done to prevent sequential calls to this function.
+     * We're saving the result to `Config.postMessage.origin` so that
+     * subsequent calls will just return the value.
+     */
+    function getParentOrigin() {
+        if (Config.postMessage.origin) {
+            return Config.postMessage.origin;
+        }
+
+        // Find the parent origin.
+        // This is necessary because in some environments,
+        // document.referrer is empty.
+        var parentOrigin = getQueryString('origin');
+        if (parentOrigin) {
+            // Ensure the parent origin has a protocol for
+            // postMessage to work correctly.
+            parentOrigin = parentOrigin.indexOf('://') === -1 ? 'https://' + parentOrigin : parentOrigin;
+        }
+
+        // If we found the parent origin, save it.
+        if (parentOrigin) {
+            Config.postMessage.origin = parentOrigin;
+        }
+
+        return parentOrigin;
+    }
+
+    /**
+     * Helper function to get a query string parameter.
+     * @param {string} name - The name of the query string parameter.
+     */
+    function getQueryString(name) {
+        var reg = new RegExp('[?&]' + name + '=([^&]*)');
+        var results = reg.exec(window.location.search);
+        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
+
+    return Postmonger;
 }));
