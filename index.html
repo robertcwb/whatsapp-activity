@@ -4,8 +4,7 @@
     <meta charset="UTF-8" />
     <title>Configuração WhatsApp Sender</title>
 
-    <!-- jQuery e Postmonger (o seu postmonger.js local do repositório) -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="jquery.min.js"></script>
     <script src="postmonger.js"></script>
 
     <style>
@@ -109,31 +108,37 @@
 </div>
 
 <script type="text/javascript">
-    // ========================
-    //  Handshake com Journey
-    // ========================
     var connection = new Postmonger.Session();
-    var activity = {};
+    var activity = {}; // Usaremos para guardar o payload
 
-    // Registramos os handlers ANTES de mandar o READY
+    // 1. Registra os "ouvintes" (listeners) PRIMEIRO
     connection.on("initActivity", onInitActivity);
-    connection.on("requestedInteraction", function (data) {
-        console.log("ℹ️ requestedInteraction:", data);
-    });
     connection.on("clickedNext", onClickedNext);
 
-    // Dispara READY quando a página estiver pronta
-    document.addEventListener("DOMContentLoaded", function () {
-        console.log("🔵 index.html carregado, enviando READY...");
+    // 2. Dispara o 'ready' QUANDO a janela estiver 100% carregada
+    $(window).on('load', function () {
+        console.log("🔵 Janela carregada (window.load). Enviando 'ready'...");
+        
+        // Agora sim, avisa o Journey Builder que estamos prontos
         connection.trigger("ready");
+        
+        // Solicita os dados da DE (bom para data binding futuro)
         connection.trigger("requestedInteraction");
     });
 
+    /**
+     * Esta função é chamada pelo Journey Builder DEPOIS que enviamos 'ready'.
+     * É aqui que o loader do Salesforce finalmente some.
+     */
     function onInitActivity(payload) {
-        console.log("✅ initActivity recebido:", payload);
-        activity = payload || {};
+        console.log("✅ 'initActivity' recebido! O loader deve sumir agora.", payload);
+        
+        if (payload) {
+            activity = payload; // Salva o payload recebido
+        }
 
         try {
+            // Tenta carregar os dados salvos anteriormente no formulário
             var hasInArgs =
                 activity.arguments &&
                 activity.arguments.execute &&
@@ -142,9 +147,10 @@
 
             if (hasInArgs) {
                 var args = activity.arguments.execute.inArguments[0];
+                console.log("🔧 Carregando dados salvos:", args);
 
                 if (args.to) {
-                    // extrai o nome do campo entre {{Contact.Attribute.DataExtension.CAMPO}}
+                    // extrai o nome do campo entre {{...}}
                     var match = args.to.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
                     if (match && match[1]) {
                         $("#phoneField").val(match[1]);
@@ -170,39 +176,46 @@
                 }
             }
         } catch (e) {
-            console.error("Erro ao processar inArguments:", e);
+            console.error("Erro ao processar inArguments no initActivity:", e);
         }
 
-        // Habilita o botão Done
+        // Habilita o botão 'Done' (Próximo)
         connection.trigger("updateButton", {
             button: "next",
             enabled: true
         });
     }
 
+    /**
+     * Esta função é chamada quando o usuário clica em 'Done' (Próximo).
+     * Ela salva os dados e fecha o modal.
+     */
     function onClickedNext() {
-        console.log("🟢 clickedNext recebido, montando payload...");
+        console.log("🟢 'Done' (Next) clicado. Salvando dados...");
 
+        // 1. Pega os valores dos campos
         var phoneField   = $("#phoneField").val().trim();
         var templateName = $("#templateName").val().trim();
         var languageCode = $("#languageCode").val();
         var var1Field    = $("#var1Field").val().trim();
         var var2Field    = $("#var2Field").val().trim();
 
+        // 2. Validação simples
         if (!phoneField || !templateName || !languageCode) {
             alert("Por favor, preencha os campos obrigatórios: Telefone, Template e Idioma.");
-            // mantém o botão habilitado para o usuário corrigir
+            // Libera o botão novamente para o usuário corrigir
             connection.trigger("updateButton", { button: "next", enabled: true });
             return;
         }
 
-        // Monta o inArguments que será enviado para o execute (Webhook Apex)
+        // 3. Monta o payload (os 'inArguments' que o Apex vai receber)
         var inArgs = {
             to: "{{Contact.Attribute.DataExtension." + phoneField + "}}",
             templateName: templateName,
             languageCode: languageCode
         };
 
+        // Adiciona variáveis dinâmicas somente se preenchidas
         if (var1Field) {
             inArgs.var1 = "{{Contact.Attribute.DataExtension." + var1Field + "}}";
         }
@@ -210,22 +223,22 @@
             inArgs.var2 = "{{Contact.Attribute.DataExtension." + var2Field + "}}";
         }
 
+        // 4. Atualiza o 'activity' global
         activity.arguments = activity.arguments || {};
         activity.arguments.execute = activity.arguments.execute || {};
         activity.arguments.execute.inArguments = [inArgs];
 
-        // Marca como configurada
+        // 5. Marca a atividade como "configurada" (essencial)
         activity.metaData = activity.metaData || {};
         activity.metaData.isConfigured = true;
 
         console.log("📦 Payload final enviado ao Journey:", JSON.stringify(activity, null, 2));
 
-        // Desabilita o botão para evitar clique duplo
-        connection.trigger("updateButton", { button: "next", enabled: false });
-
-        // Entrega de volta pro Journey Builder → aqui é onde o modal DEVE FECHAR
+        // 6. Envia os dados de volta para o Journey Builder
+        // (Isso fecha o modal e salva a configuração)
         connection.trigger("updateActivity", activity);
     }
 </script>
+
 </body>
 </html>
