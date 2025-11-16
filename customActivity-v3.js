@@ -5,7 +5,7 @@
 'use strict';
 
 // Endpoint FINAL no Salesforce
-var EXECUTE_URL = 'https://consorcioservopa.my.salesforce.com/services/apexrest/wa/send';
+var EXECUTE_URL = 'https://consorcioservopa.my.site.com/servopamcwebhook/services/apexrest/wa/send';
 
 var connection = new Postmonger.Session();
 var activityData = {};
@@ -50,9 +50,7 @@ function onInit(payload) {
             }
 
             $('#templateName').val(args.templateName || '');
-            $('#langCode').val(args.languageCode || 'en_US');
-            $('#var1').val(args.var1 || '');
-            $('#var2').val(args.var2 || '');
+            $('#langCode').val(args.languageCode || 'en');
         }
     } catch (e) {
         console.error('Erro ao ler inArguments:', e);
@@ -95,9 +93,7 @@ function onSave() {
 
     var phoneKey   = $('#phoneField').val();
     var template   = $('#templateName').val();
-    var langCode   = $('#langCode').val() || 'en_US';  // default inglês
-    var var1       = $('#var1').val();
-    var var2       = $('#var2').val();
+    var langCode   = $('#langCode').val() || 'en';  // default inglês
 
     if (!phoneKey || !template) {
         alert('Preencha os campos obrigatórios: Telefone e Template.');
@@ -110,9 +106,7 @@ function onSave() {
     var inArgs = [{
         to: toToken,
         templateName: template,
-        languageCode: langCode,
-        var1: var1,
-        var2: var2
+        languageCode: langCode
     }];
 
     if (!activityData.arguments) {
