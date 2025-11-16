@@ -7,7 +7,7 @@ define([], function () {
         },
         type: "REST",
         lang: {
-            "en-US": {
+            "en": {
                 name: "Send WhatsApp (Salesforce)"
             },
             "pt-BR": {
