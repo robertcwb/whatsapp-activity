@@ -26,6 +26,11 @@ function onInit(payload) {
     console.log('🔥 initActivity recebido:', payload);
     activityData = payload || {};
 
+    // Log da URL de execute pra garantir que é n8n ou Salesforce
+    if (activityData.arguments && activityData.arguments.execute) {
+        console.log('🌍 execute.url atual:', activityData.arguments.execute.url);
+    }
+
     // Recupera inArguments se já existirem
     try {
         if (activityData.arguments &&
