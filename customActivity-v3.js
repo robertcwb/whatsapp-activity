@@ -4,8 +4,8 @@
 
 'use strict';
 
-// 👇 controla para onde o execute vai
-var EXECUTE_URL = 'https://n8naudaxintelli.app.n8n.cloud/webhook/59e26e7a-6499-4f0f-bc5c-d58cf72d0b8f';
+// Endpoint FINAL no Salesforce
+var EXECUTE_URL = 'https://consorcioservopa.my.salesforce.com/services/apexrest/wa/send';
 
 var connection = new Postmonger.Session();
 var activityData = {};
@@ -50,7 +50,7 @@ function onInit(payload) {
             }
 
             $('#templateName').val(args.templateName || '');
-            $('#langCode').val(args.languageCode || 'pt_BR');
+            $('#langCode').val(args.languageCode || 'en_US');
             $('#var1').val(args.var1 || '');
             $('#var2').val(args.var2 || '');
         }
@@ -95,7 +95,7 @@ function onSave() {
 
     var phoneKey   = $('#phoneField').val();
     var template   = $('#templateName').val();
-    var langCode   = $('#langCode').val();
+    var langCode   = $('#langCode').val() || 'en_US';  // default inglês
     var var1       = $('#var1').val();
     var var2       = $('#var2').val();
 
@@ -104,6 +104,7 @@ function onSave() {
         return;
     }
 
+    // Ex: {{Event.DEAudience-xxx.PhoneNumber}}
     var toToken = '{{' + phoneKey + '}}';
 
     var inArgs = [{
@@ -122,7 +123,9 @@ function onSave() {
     }
 
     activityData.arguments.execute.inArguments = inArgs;
-    activityData.arguments.execute.url = EXECUTE_URL; // 👈 força endpoint novo
+
+    // força sempre o endpoint do Apex
+    activityData.arguments.execute.url = EXECUTE_URL;
 
     activityData.metaData = activityData.metaData || {};
     activityData.metaData.isConfigured = true;
