@@ -1,63 +1,231 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>Teste WhatsApp Activity</title>
+    <meta charset="UTF-8" />
+    <title>Configuração WhatsApp Sender</title>
 
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="postmonger.js"></script>
+    <!-- jQuery e Postmonger (o seu postmonger.js local do repositório) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="postmonger.js"></script>
 
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    .info {
-      padding: 15px;
-      border-radius: 4px;
-      background: #e8f4fd;
-      border-left: 4px solid #0176d3;
-    }
-  </style>
+    <style>
+        body {
+            font-family: 'Salesforce Sans', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f6f9;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #032d60;
+            margin-top: 0;
+            border-bottom: 2px solid #0176d3;
+            padding-bottom: 10px;
+        }
+        .info-box {
+            background-color: #e8f4fd;
+            border-left: 4px solid #0176d3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .form-group { margin-bottom: 20px; }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #3e3e3c;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #c9c9c9;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #0176d3;
+            box-shadow: 0 0 3px rgba(1, 118, 211, 0.5);
+        }
+        .help-text {
+            font-size: 12px;
+            color: #706e6b;
+            margin-top: 5px;
+        }
+    </style>
 </head>
 <body>
-  <h2>🔧 Teste de Configuração da Activity</h2>
-  <div class="info">
-    <p>Se o modal fechar ao clicar em <strong>Done</strong>, o handshake com o Journey Builder está OK.</p>
-  </div>
+<div class="container">
+    <h2>📱 Configuração de Envio de WhatsApp</h2>
 
-  <script>
+    <div class="info-box">
+        <p><strong>ℹ️ Como funciona:</strong> Esta atividade enviará templates do WhatsApp através da classe Apex <code>WhatsappSend</code> no Salesforce.</p>
+        <p>Configure abaixo qual campo da Data Extension contém o telefone, o template e o idioma.</p>
+    </div>
+
+    <div class="form-group">
+        <label for="phoneField">Campo do Telefone *</label>
+        <input type="text" id="phoneField" placeholder="Ex: PhoneNumber" value="PhoneNumber" />
+        <div class="help-text">Nome da coluna na Data Extension que contém o número de telefone (somente o nome do campo, sem {{ }})</div>
+    </div>
+
+    <div class="form-group">
+        <label for="templateName">Nome do Template *</label>
+        <input type="text" id="templateName" placeholder="Ex: black_servopa" value="black_servopa" />
+        <div class="help-text">Nome exato do template aprovado na Meta</div>
+    </div>
+
+    <div class="form-group">
+        <label for="languageCode">Código do Idioma *</label>
+        <select id="languageCode">
+            <option value="en">English (en)</option>
+            <option value="en_US">English US (en_US)</option>
+            <option value="pt_BR" selected>Português Brasil (pt_BR)</option>
+            <option value="es">Español (es)</option>
+        </select>
+        <div class="help-text">Idioma do template configurado na Meta</div>
+    </div>
+
+    <div class="form-group">
+        <label for="var1Field">Variável 1 (Opcional)</label>
+        <input type="text" id="var1Field" placeholder="Ex: FirstName" />
+        <div class="help-text">Nome da coluna para a primeira variável do template</div>
+    </div>
+
+    <div class="form-group">
+        <label for="var2Field">Variável 2 (Opcional)</label>
+        <input type="text" id="var2Field" placeholder="Ex: DiscountPercentage" />
+        <div class="help-text">Nome da coluna para a segunda variável do template</div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    // ========================
+    //  Handshake com Journey
+    // ========================
     var connection = new Postmonger.Session();
     var activity = {};
 
-    // 1) Registramos os handlers ANTES de mandar o READY
-    connection.on("initActivity", function (payload) {
-      console.log("✅ initActivity recebido:", payload);
-      activity = payload || {};
-
-      connection.trigger("updateButton", {
-        button: "next",
-        enabled: true
-      });
-    });
-
+    // Registramos os handlers ANTES de mandar o READY
+    connection.on("initActivity", onInitActivity);
     connection.on("requestedInteraction", function (data) {
-      console.log("ℹ️ requestedInteraction:", data);
+        console.log("ℹ️ requestedInteraction:", data);
     });
+    connection.on("clickedNext", onClickedNext);
 
-    connection.on("clickedNext", function () {
-      console.log("🟢 clickedNext recebido, enviando updateActivity...");
-
-      activity.metaData = activity.metaData || {};
-      activity.metaData.isConfigured = true;
-
-      connection.trigger("updateButton", { button: "next", enabled: false });
-      connection.trigger("updateActivity", activity);
-    });
-
-    // 2) Só depois que tudo está registrado, disparamos o READY
+    // Dispara READY quando a página estiver pronta
     document.addEventListener("DOMContentLoaded", function () {
-      console.log("🔵 index.html carregado, enviando READY...");
-      connection.trigger("ready");
-      connection.trigger("requestedInteraction");
+        console.log("🔵 index.html carregado, enviando READY...");
+        connection.trigger("ready");
+        connection.trigger("requestedInteraction");
     });
-  </script>
+
+    function onInitActivity(payload) {
+        console.log("✅ initActivity recebido:", payload);
+        activity = payload || {};
+
+        try {
+            var hasInArgs =
+                activity.arguments &&
+                activity.arguments.execute &&
+                Array.isArray(activity.arguments.execute.inArguments) &&
+                activity.arguments.execute.inArguments.length > 0;
+
+            if (hasInArgs) {
+                var args = activity.arguments.execute.inArguments[0];
+
+                if (args.to) {
+                    // extrai o nome do campo entre {{Contact.Attribute.DataExtension.CAMPO}}
+                    var match = args.to.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
+                    if (match && match[1]) {
+                        $("#phoneField").val(match[1]);
+                    }
+                }
+
+                if (args.templateName && !String(args.templateName).includes("{{")) {
+                    $("#templateName").val(args.templateName);
+                }
+
+                if (args.languageCode && !String(args.languageCode).includes("{{")) {
+                    $("#languageCode").val(args.languageCode);
+                }
+
+                if (args.var1) {
+                    var m1 = args.var1.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
+                    if (m1 && m1[1]) $("#var1Field").val(m1[1]);
+                }
+
+                if (args.var2) {
+                    var m2 = args.var2.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
+                    if (m2 && m2[1]) $("#var2Field").val(m2[1]);
+                }
+            }
+        } catch (e) {
+            console.error("Erro ao processar inArguments:", e);
+        }
+
+        // Habilita o botão Done
+        connection.trigger("updateButton", {
+            button: "next",
+            enabled: true
+        });
+    }
+
+    function onClickedNext() {
+        console.log("🟢 clickedNext recebido, montando payload...");
+
+        var phoneField   = $("#phoneField").val().trim();
+        var templateName = $("#templateName").val().trim();
+        var languageCode = $("#languageCode").val();
+        var var1Field    = $("#var1Field").val().trim();
+        var var2Field    = $("#var2Field").val().trim();
+
+        if (!phoneField || !templateName || !languageCode) {
+            alert("Por favor, preencha os campos obrigatórios: Telefone, Template e Idioma.");
+            // mantém o botão habilitado para o usuário corrigir
+            connection.trigger("updateButton", { button: "next", enabled: true });
+            return;
+        }
+
+        // Monta o inArguments que será enviado para o execute (Webhook Apex)
+        var inArgs = {
+            to: "{{Contact.Attribute.DataExtension." + phoneField + "}}",
+            templateName: templateName,
+            languageCode: languageCode
+        };
+
+        if (var1Field) {
+            inArgs.var1 = "{{Contact.Attribute.DataExtension." + var1Field + "}}";
+        }
+        if (var2Field) {
+            inArgs.var2 = "{{Contact.Attribute.DataExtension." + var2Field + "}}";
+        }
+
+        activity.arguments = activity.arguments || {};
+        activity.arguments.execute = activity.arguments.execute || {};
+        activity.arguments.execute.inArguments = [inArgs];
+
+        // Marca como configurada
+        activity.metaData = activity.metaData || {};
+        activity.metaData.isConfigured = true;
+
+        console.log("📦 Payload final enviado ao Journey:", JSON.stringify(activity, null, 2));
+
+        // Desabilita o botão para evitar clique duplo
+        connection.trigger("updateButton", { button: "next", enabled: false });
+
+        // Entrega de volta pro Journey Builder → aqui é onde o modal DEVE FECHAR
+        connection.trigger("updateActivity", activity);
+    }
+</script>
 </body>
 </html>
