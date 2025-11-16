@@ -4,8 +4,10 @@
     <meta charset="UTF-8" />
     <title>Configuração WhatsApp Sender</title>
 
-<script src="jquery.min.js?v=1.1"></script>
-<script src="postmonger.js?v=1.1"></script>
+    <!-- Carrega jQuery PRIMEIRO -->
+    <script src="jquery.min.js"></script>
+    <!-- Carrega Postmonger DEPOIS -->
+    <script src="postmonger.js"></script>
 
     <style>
         body {
@@ -74,7 +76,7 @@
     <div class="form-group">
         <label for="phoneField">Campo do Telefone *</label>
         <input type="text" id="phoneField" placeholder="Ex: PhoneNumber" value="PhoneNumber" />
-        <div class="help-text">Nome da coluna na Data Extension que contém o número de telefone (somente o nome do campo, sem {{ }})</div>
+        <div class="help-text">Nome da coluna na Data Extension que contém o número de telefone</div>
     </div>
 
     <div class="form-group">
@@ -108,137 +110,150 @@
 </div>
 
 <script type="text/javascript">
-    var connection = new Postmonger.Session();
-    var activity = {}; // Usaremos para guardar o payload
-
-    // 1. Registra os "ouvintes" (listeners) PRIMEIRO
-    connection.on("initActivity", onInitActivity);
-    connection.on("clickedNext", onClickedNext);
-
-    // 2. Dispara o 'ready' QUANDO a janela estiver 100% carregada
-    $(window).on('load', function () {
-        console.log("🔵 Janela carregada (window.load). Enviando 'ready'...");
-        
-        // Agora sim, avisa o Journey Builder que estamos prontos
-        connection.trigger("ready");
-        
-        // Solicita os dados da DE (bom para data binding futuro)
-        connection.trigger("requestedInteraction");
-    });
-
-    /**
-     * Esta função é chamada pelo Journey Builder DEPOIS que enviamos 'ready'.
-     * É aqui que o loader do Salesforce finalmente some.
-     */
-    function onInitActivity(payload) {
-        console.log("✅ 'initActivity' recebido! O loader deve sumir agora.", payload);
-        
-        if (payload) {
-            activity = payload; // Salva o payload recebido
-        }
-
-        try {
-            // Tenta carregar os dados salvos anteriormente no formulário
-            var hasInArgs =
-                activity.arguments &&
-                activity.arguments.execute &&
-                Array.isArray(activity.arguments.execute.inArguments) &&
-                activity.arguments.execute.inArguments.length > 0;
-
-            if (hasInArgs) {
-                var args = activity.arguments.execute.inArguments[0];
-                console.log("🔧 Carregando dados salvos:", args);
-
-                if (args.to) {
-                    // extrai o nome do campo entre {{...}}
-                    var match = args.to.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
-                    if (match && match[1]) {
-                        $("#phoneField").val(match[1]);
-                    }
-                }
-
-                if (args.templateName && !String(args.templateName).includes("{{")) {
-                    $("#templateName").val(args.templateName);
-                }
-
-                if (args.languageCode && !String(args.languageCode).includes("{{")) {
-                    $("#languageCode").val(args.languageCode);
-                }
-
-                if (args.var1) {
-                    var m1 = args.var1.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
-                    if (m1 && m1[1]) $("#var1Field").val(m1[1]);
-                }
-
-                if (args.var2) {
-                    var m2 = args.var2.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
-                    if (m2 && m2[1]) $("#var2Field").val(m2[1]);
-                }
-            }
-        } catch (e) {
-            console.error("Erro ao processar inArguments no initActivity:", e);
-        }
-
-        // Habilita o botão 'Done' (Próximo)
-        connection.trigger("updateButton", {
-            button: "next",
-            enabled: true
-        });
-    }
-
-    /**
-     * Esta função é chamada quando o usuário clica em 'Done' (Próximo).
-     * Ela salva os dados e fecha o modal.
-     */
-    function onClickedNext() {
-        console.log("🟢 'Done' (Next) clicado. Salvando dados...");
-
-        // 1. Pega os valores dos campos
-        var phoneField   = $("#phoneField").val().trim();
-        var templateName = $("#templateName").val().trim();
-        var languageCode = $("#languageCode").val();
-        var var1Field    = $("#var1Field").val().trim();
-        var var2Field    = $("#var2Field").val().trim();
-
-        // 2. Validação simples
-        if (!phoneField || !templateName || !languageCode) {
-            alert("Por favor, preencha os campos obrigatórios: Telefone, Template e Idioma.");
-            // Libera o botão novamente para o usuário corrigir
-            connection.trigger("updateButton", { button: "next", enabled: true });
+    // IMPORTANTE: Aguarda jQuery E Postmonger estarem prontos
+    (function() {
+        // Verifica se Postmonger está definido
+        if (typeof Postmonger === 'undefined') {
+            console.error('❌ Postmonger não está definido! Verifique se postmonger.js foi carregado.');
             return;
         }
 
-        // 3. Monta o payload (os 'inArguments' que o Apex vai receber)
-        var inArgs = {
-            to: "{{Contact.Attribute.DataExtension." + phoneField + "}}",
-            templateName: templateName,
-            languageCode: languageCode
-        };
+        console.log('✅ Postmonger carregado com sucesso!');
 
-        // Adiciona variáveis dinâmicas somente se preenchidas
-        if (var1Field) {
-            inArgs.var1 = "{{Contact.Attribute.DataExtension." + var1Field + "}}";
+        var connection = new Postmonger.Session();
+        var activity = {};
+
+        // 1. Registra os listeners PRIMEIRO
+        connection.on("initActivity", onInitActivity);
+        connection.on("clickedNext", onClickedNext);
+
+        // 2. Aguarda a página carregar completamente
+        $(document).ready(function() {
+            console.log("🔵 Documento pronto. Enviando 'ready' para o Journey Builder...");
+            
+            // Avisa o Journey Builder que estamos prontos
+            connection.trigger("ready");
+            
+            // Solicita os dados da interação
+            connection.trigger("requestedInteraction");
+        });
+
+        /**
+         * Chamado quando o Journey Builder envia os dados da atividade
+         */
+        function onInitActivity(payload) {
+            console.log("✅ 'initActivity' recebido!", payload);
+            
+            if (payload) {
+                activity = payload;
+            }
+
+            try {
+                // Carrega dados salvos anteriormente
+                var hasInArgs =
+                    activity.arguments &&
+                    activity.arguments.execute &&
+                    Array.isArray(activity.arguments.execute.inArguments) &&
+                    activity.arguments.execute.inArguments.length > 0;
+
+                if (hasInArgs) {
+                    var args = activity.arguments.execute.inArguments[0];
+                    
+                    // Campo do telefone
+                    if (args.to) {
+                        var phoneMatch = args.to.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
+                        if (phoneMatch && phoneMatch[1]) {
+                            $("#phoneField").val(phoneMatch[1]);
+                        }
+                    }
+                    
+                    // Nome do template
+                    if (args.templateName && !args.templateName.includes('{{')) {
+                        $("#templateName").val(args.templateName);
+                    }
+                    
+                    // Código do idioma
+                    if (args.languageCode && !args.languageCode.includes('{{')) {
+                        $("#languageCode").val(args.languageCode);
+                    }
+                    
+                    // Variável 1
+                    if (args.var1) {
+                        var var1Match = args.var1.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
+                        if (var1Match && var1Match[1]) {
+                            $("#var1Field").val(var1Match[1]);
+                        }
+                    }
+                    
+                    // Variável 2
+                    if (args.var2) {
+                        var var2Match = args.var2.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
+                        if (var2Match && var2Match[1]) {
+                            $("#var2Field").val(var2Match[1]);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Erro ao processar inArguments:", e);
+            }
+
+            // Habilita o botão 'Done'
+            connection.trigger("updateButton", {
+                button: "next",
+                enabled: true
+            });
         }
-        if (var2Field) {
-            inArgs.var2 = "{{Contact.Attribute.DataExtension." + var2Field + "}}";
+
+        /**
+         * Chamado quando o usuário clica em 'Done'
+         */
+        function onClickedNext() {
+            console.log("🟢 'Done' clicado. Salvando configuração...");
+
+            // Pega os valores dos campos
+            var phoneField   = $("#phoneField").val().trim();
+            var templateName = $("#templateName").val().trim();
+            var languageCode = $("#languageCode").val();
+            var var1Field    = $("#var1Field").val().trim();
+            var var2Field    = $("#var2Field").val().trim();
+
+            // Validação
+            if (!phoneField || !templateName || !languageCode) {
+                alert("Por favor, preencha os campos obrigatórios: Telefone, Template e Idioma.");
+                connection.trigger("updateButton", { button: "next", enabled: true });
+                return;
+            }
+
+            // Monta o payload
+            var inArgs = {
+                to: "{{Contact.Attribute.DataExtension." + phoneField + "}}",
+                templateName: templateName,
+                languageCode: languageCode,
+                type: "template"
+            };
+
+            // Adiciona variáveis se preenchidas
+            if (var1Field) {
+                inArgs.var1 = "{{Contact.Attribute.DataExtension." + var1Field + "}}";
+            }
+            if (var2Field) {
+                inArgs.var2 = "{{Contact.Attribute.DataExtension." + var2Field + "}}";
+            }
+
+            // Atualiza o activity
+            activity.arguments = activity.arguments || {};
+            activity.arguments.execute = activity.arguments.execute || {};
+            activity.arguments.execute.inArguments = [inArgs];
+            
+            activity.metaData = activity.metaData || {};
+            activity.metaData.isConfigured = true;
+
+            console.log("💾 Salvando payload:", activity);
+
+            // Envia para o Journey Builder
+            connection.trigger("updateActivity", activity);
         }
-
-        // 4. Atualiza o 'activity' global
-        activity.arguments = activity.arguments || {};
-        activity.arguments.execute = activity.arguments.execute || {};
-        activity.arguments.execute.inArguments = [inArgs];
-
-        // 5. Marca a atividade como "configurada" (essencial)
-        activity.metaData = activity.metaData || {};
-        activity.metaData.isConfigured = true;
-
-        console.log("📦 Payload final enviado ao Journey:", JSON.stringify(activity, null, 2));
-
-        // 6. Envia os dados de volta para o Journey Builder
-        // (Isso fecha o modal e salva a configuração)
-        connection.trigger("updateActivity", activity);
-    }
+    })();
 </script>
-
 </body>
 </html>
