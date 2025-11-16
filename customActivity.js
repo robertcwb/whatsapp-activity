@@ -1,29 +1,25 @@
-/* customActivity.js
+/* customActivity-v3.js
  * Send WhatsApp (Salesforce) - Journey Builder Custom Activity
  */
 
 'use strict';
 
-// 👇 muda aqui quando quiser apontar pra outro lugar (n8n ou Apex)
+// 👇 controla para onde o execute vai
 var EXECUTE_URL = 'https://n8naudaxintelli.app.n8n.cloud/webhook/59e26e7a-6499-4f0f-bc5c-d58cf72d0b8f';
 
 var connection = new Postmonger.Session();
 var activityData = {};
 
-console.log('🚀 WhatsApp Custom Activity carregada');
+console.log('🚀 WhatsApp Custom Activity V3 carregada');
 
-// ==== AVISA O JOURNEY BUILDER QUE A ACTIVITY ESTÁ PRONTA ====
 $(window).ready(function () {
     console.log('🟢 Window ready, enviando "ready" para o Journey Builder...');
     connection.trigger('ready');
 });
 
-// ==== EVENTOS REGISTRADOS ====
 connection.on('initActivity', onInit);
 connection.on('requestedSchema', onRequestedSchema);
 connection.on('clickedNext', onSave);
-
-// ==== HANDLERS ====
 
 function onInit(payload) {
     console.log('🔥 initActivity recebido:', payload);
@@ -33,7 +29,6 @@ function onInit(payload) {
         console.log('🌍 execute.url atual (antes do save):', activityData.arguments.execute.url);
     }
 
-    // Recupera inArguments se já existirem
     try {
         if (activityData.arguments &&
             activityData.arguments.execute &&
@@ -81,7 +76,7 @@ function onRequestedSchema(schema) {
     phoneSelect.append('<option value="">Selecione...</option>');
 
     schema.schema.forEach(function (field) {
-        var key = field.key;              // Contact.Attribute.DE.Campo
+        var key = field.key;
         var name = field.name || key;
 
         phoneSelect.append(
@@ -109,7 +104,6 @@ function onSave() {
         return;
     }
 
-    // Monta token: {{Contact.Attribute.DE.PhoneNumber}}
     var toToken = '{{' + phoneKey + '}}';
 
     var inArgs = [{
@@ -128,9 +122,7 @@ function onSave() {
     }
 
     activityData.arguments.execute.inArguments = inArgs;
-
-    // 👇 AQUI FORÇAMOS A URL DE EXECUTE
-    activityData.arguments.execute.url = EXECUTE_URL;
+    activityData.arguments.execute.url = EXECUTE_URL; // 👈 força endpoint novo
 
     activityData.metaData = activityData.metaData || {};
     activityData.metaData.isConfigured = true;
