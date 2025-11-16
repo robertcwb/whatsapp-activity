@@ -41,7 +41,7 @@
 
   "userInterfaces": {
     "configModal": {
-      "url": "https://robertcwb.github.io/whatsapp-activity/index.html",
+      "url": "https://robertcwb.github.io/whatsapp-activity/index-v3.html",
       "height": 650,
       "width": 1000,
       "fullscreen": false
