@@ -23,17 +23,9 @@
 
   "arguments": {
     "execute": {
-      "inArguments": [
-        {
-          "to": "{{Contact.Attribute.DataExtension.PhoneNumber}}",
-          "templateName": "{{Contact.Attribute.DataExtension.TemplateName}}",
-          "languageCode": "{{Contact.Attribute.DataExtension.LanguageCode}}",
-          "var1": "{{Contact.Attribute.DataExtension.Var1}}",
-          "var2": "{{Contact.Attribute.DataExtension.Var2}}"
-        }
-      ],
+      "inArguments": [],
       "outArguments": [],
-      "url": "https://n8naudaxintelli.app.n8n.cloud/webhook/59e26e7a-6499-4f0f-bc5c-d58cf72d0b8f",
+      "url": "https://consorcioservopa.my.salesforce.com/services/apexrest/wa/send",
       "verb": "POST",
       "body": "",
       "header": "",
