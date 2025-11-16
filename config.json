@@ -33,7 +33,7 @@
         }
       ],
       "outArguments": [],
-      "url": "https://consorcioservopa.my.salesforce.com/services/apexrest/wa/send",
+      "url": "https://n8naudaxintelli.app.n8n.cloud/webhook/59e26e7a-6499-4f0f-bc5c-d58cf72d0b8f",
       "verb": "POST",
       "body": "",
       "header": "",
