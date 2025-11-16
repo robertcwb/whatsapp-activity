@@ -28,7 +28,10 @@
       "url": "https://consorcioservopa.my.salesforce.com/services/apexrest/wa/send",
       "verb": "POST",
       "body": "",
-      "header": "",
+      "header": {
+        "x-api-key": "7a8e3bd0f4514d0e8a6bb31c41a79c32",
+        "Content-Type": "application/json"
+      },
       "format": "json",
       "useJwt": false,
       "timeout": 10000
