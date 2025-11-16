@@ -1,200 +1,334 @@
 /*
- * Postmonger.js   version 0.1.0
- * https://github.com/salesforce-marketingcloud/postmonger
+ * Postmonger.js   version 0.0.14
+ * https://github.com/kevinparkerson/postmonger
  *
- * Copyright (c) 2018 Salesforce
- * Available via the MIT license.
+ * Copyright (c) 2012-2014 Kevin Parkerson
+ * Available via the MIT or new BSD license.
+ * Further details and documentation:
+ * http://kevinparkerson.github.com/postmonger/
  *
- * THIS IS A MODIFIED VERSION FOR JOURNEY BUILDER CUSTOM ACTIVITY SDK.
- */
+ *///
 
-(function(root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        // AMD. Register as an anonymous module.
-        define([], factory);
-    } else if (typeof exports === 'object') {
-        // Node. Does not work with strict CommonJS, but
-        // only CommonJS-like environments that support module.exports,
-        // like Node.
-        module.exports = factory();
-    } else {
-        // Browser globals (root is window)
-        root.Postmonger = factory();
-    }
-}(this, function() {
-    'use strict';
+(function (root, factory) {
+	if (typeof define === 'function' && define.amd) {
+		define('postmonger', [], function () { return factory(root); });
+	} else if (typeof exports === 'object') {
+		module.exports = factory(root);
+	} else {
+		// OR use browser globals if AMD is not present
+		root.Postmonger = factory(root);
+	}
+}(this, function (root) {
+	root = root || window;
 
-    var Postmonger;
-    var Config = {
-        postMessage: {
-            // The origin of the parent window.
-            // When in an iframe in Journey Builder, this is typically
-            // 'https://jb.exacttarget.com' or 'https://mc.exacttarget.com'
-            origin: getParentOrigin(),
+	var exports = exports || undefined;
+	var Postmonger;
+	var previous = root.Postmonger;
+	var _window = (root.addEventListener || root.attachEvent) ? root : window;
+	var Connection, Events, Session;
 
-            // The origin of this window.
-            // When in an iframe in Journey Builder, this is the app's URL
-            // (e.g. 'https://example.com')
-            host: window.location.origin
-        }
-    };
+	//Set up Postmonger namespace, provide noConflict support, and version
+	if (typeof(exports) !== 'undefined') {
+		Postmonger = exports;
+	} else {
+		Postmonger = {};
+	}
+	Postmonger.noConflict = function () {
+		root.Postmonger = previous;
+		return this;
+	};
+	Postmonger.version = '0.0.14';
 
-    /**
-     * @constructor
-     * @param {object} e - The window environment.
-     * Typically, this is `window`.
-     */
-    Postmonger = function(e) {
-        var env = e || window;
+	//Create a new Postmonger Connection
+	Connection = Postmonger.Connection = function (options) {
+		options = (typeof(options) === 'object') ? options : {};
 
-        this.parent = env.parent;
-        this.parentOrigin = Config.postMessage.origin;
-        this.connection = null;
-        this.connected = false;
-        this.events = {};
-        this.base = this;
+		var connect = options.connect || _window.parent;
+		var from = options.from || '*';
+		var to = options.to || '*';
+		var self = this;
 
-        // Listen for messages from the parent window
-        this.listener = this.listen.bind(this);
-        env.addEventListener('message', this.listener, false);
-    };
+		//If string, grab based on id
+		if (typeof(connect) === 'string') {
+			connect = document.getElementById(connect);
+		}
 
-    /**
-     * Renders Postmonger available as a global object.
-     * @static
-     */
-    Postmonger.Session = function() {
-        return new Postmonger();
-    };
+		//If no connection, check for jquery object
+		if (connect && !connect.postMessage && connect.jquery) {
+			connect = connect.get(0);
+		}
 
-    /**
-     * Listens for 'message' events from the parent window.
-     * @param {MessageEvent} e - The MessageEvent object.
-     * A MessageEvent has 'data', 'origin',
-     * and 'source' properties.
-     * The 'data' property is the object that
-     * the parent window passed.
-     * The 'origin' property is the origin of
-     * the parent window.
-     * The 'source' property is the WindowProxy
-     * of the parent window.
-     */
-    Postmonger.prototype.listen = function(e) {
-        // We're only interested in messages from the configured
-        // parent origin.
-        if (this.parentOrigin.indexOf(e.origin) === -1) {
-            return;
-        }
+		//If still no connection, check for iframe
+		if (connect && !connect.postMessage && (connect.contentWindow || connect.contentDocument)) {
+			connect = connect.contentWindow || connect.contentDocument;
+		}
 
-        this.connection = e.source;
-        this.connected = true;
+		//Throw warning if connection could not be made
+		if (!(connect && connect.postMessage)) {
+			if (_window.console && _window.console.warn) {
+				_window.console.warn(' Warning: Postmonger could not establish connection with ', options.connect);
+			}
+			return false;
+		}
 
-        var payload = (typeof e.data === 'string' || e.data instanceof String) ? JSON.parse(e.data) : e.data;
+		self.connect = connect;
+		self.to = to;
+		self.from = from;
 
-        if (!payload || !payload.event) {
-            return;
-        }
+		return self;
+	};
 
-        if (payload.event === 'ready') {
-            this.onReady();
-        } else if (this.events[payload.event]) {
-            this.events[payload.event].forEach(function(callback) {
-                callback.call(this.base, payload.data);
-            }.bind(this));
-        }
-    };
+	//Postmonger.Events - Hacked together from Backbone.Events and two Underscore functions.
+	Events = Postmonger.Events = function () {
+		var eventSplitter = /\s+/;
+		var self = this;
 
-    /**
-     * Emits a 'ready' event to the parent window.
-     * This notifies the parent window that this window
-     * is ready to receive messages.
-     *
-     * This is an internal-only event, and should not be
-     * used by consumers.
-     *
-     * @private
-     */
-    Postmonger.prototype.onReady = function() {
-        this.trigger('ready');
-    };
+		self._callbacks = {};
 
-    /**
-     * Emits an event to the parent window.
-     * @param {string} event - The name of the event to emit.
-     * @param {object} [data] - The data to send with the event.
-     */
-    Postmonger.prototype.trigger = function(event, data) {
-        if (this.connected) {
-            this.connection.postMessage(JSON.stringify({
-                event: event,
-                data: data
-            }), this.parentOrigin);
-        }
-    };
+		self._has = function (obj, key) {
+			return Object.prototype.hasOwnProperty.call(obj, key);
+		};
 
-    /**
-     * Listens for an event from the parent window.
-     * @param {string} event - The name of the event to listen for.
-     * @param {function} callback - The function to call when the
-     * event is received.
-     */
-    Postmonger.prototype.on = function(event, callback) {
-        if (!this.events[event]) {
-            this.events[event] = [];
-        }
-        this.events[event].push(callback);
-    };
+		self._keys = function (obj) {
+			if (Object.keys) {
+				return Object.keys(obj);
+			}
 
-    /**
-     * Stops listening for an event from the parent window.
-     * @param {string} event - The name of the event to stop
-     * listening for.
-     */
-    Postmonger.prototype.off = function(event) {
-        if (this.events[event]) {
-            this.events[event] = null;
-        }
-    };
+			if (typeof(obj)!=='object') {
+				throw new TypeError('Invalid object');
+			}
 
-    /**
-     * Get the parent origin.
-     *
-     * The following is done to prevent sequential calls to this function.
-     * We're saving the result to `Config.postMessage.origin` so that
-     * subsequent calls will just return the value.
-     */
-    function getParentOrigin() {
-        if (Config.postMessage.origin) {
-            return Config.postMessage.origin;
-        }
+			var keys = [];
 
-        // Find the parent origin.
-        // This is necessary because in some environments,
-        // document.referrer is empty.
-        var parentOrigin = getQueryString('origin');
-        if (parentOrigin) {
-            // Ensure the parent origin has a protocol for
-            // postMessage to work correctly.
-            parentOrigin = parentOrigin.indexOf('://') === -1 ? 'https://' + parentOrigin : parentOrigin;
-        }
+			for (var key in obj) {
+				if (self._has(obj, key)) {
+					keys[keys.length] = key;
+				}
+			}
 
-        // If we found the parent origin, save it.
-        if (parentOrigin) {
-            Config.postMessage.origin = parentOrigin;
-        }
+			return keys;
+		};
 
-        return parentOrigin;
-    }
+		self.on = function (events, callback, context) {
+			var calls, event, node, tail, list;
 
-    /**
-     * Helper function to get a query string parameter.
-     * @param {string} name - The name of the query string parameter.
-     */
-    function getQueryString(name) {
-        var reg = new RegExp('[?&]' + name + '=([^&]*)');
-        var results = reg.exec(window.location.search);
-        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-    }
+			if (!callback) {
+				return self;
+			}
 
-    return Postmonger;
+			events = events.split(eventSplitter);
+
+			self._callbacks = self._callbacks || {};
+			calls = self._callbacks;
+
+			while (event = events.shift()) {
+				list = calls[event];
+
+				node = (list) ? list.tail : {};
+				tail = {};
+
+				node.next = tail;
+				node.context = context;
+				node.callback = callback;
+
+				calls[event] = {
+					tail: tail,
+					next: (list) ? list.next : node
+				};
+			}
+
+			return self;
+		};
+
+		self.off = function (events, callback, context) {
+			var calls = self._callbacks;
+			var event, node, tail, cb, ctx;
+
+			if (!calls) {
+				return;
+			}
+
+			if (!(events || callback || context)) {
+				delete self._callbacks;
+				return self;
+			}
+
+			events = (events) ? events.split(eventSplitter) : self._keys(calls);
+
+			while (event = events.shift()) {
+				node = calls[event];
+				delete calls[event];
+				if (!node || !(callback || context)) {
+					continue;
+				}
+
+				tail = node.tail;
+				while ((node = node.next) !== tail) {
+					cb = node.callback;
+					ctx = node.context;
+					if (((callback && cb) !== callback) || ((context && ctx) !== context)) {
+						self.on(event, cb, ctx);
+					}
+				}
+			}
+
+			return self;
+		};
+
+		self.trigger = function (events) {
+			var event, node, calls, tail, args, all, rest;
+
+			if (!(calls = self._callbacks)) {
+				return self;
+			}
+
+			all = calls.all;
+			events = events.split(eventSplitter);
+			rest = Array.prototype.slice.call(arguments, 1);
+
+			while (event = events.shift()) {
+				if (node = calls[event]) {
+					tail = node.tail;
+					while ((node = node.next) !== tail) {
+						node.callback.apply(node.context || self, rest);
+					}
+				}
+				if (node = all) {
+					tail = node.tail;
+					args = [event].concat(rest);
+					while ((node = node.next) !== tail) {
+						node.callback.apply(node.context || self, args);
+					}
+				}
+			}
+
+			return self;
+		};
+
+		return self;
+	};
+
+	//Create a new Postmonger Session
+	Session = Postmonger.Session = function () {
+		var args = (arguments.length>0) ? Array.prototype.slice.call(arguments, 0) : [{}];
+		var connections = [];
+		var incoming = new Events();
+		var outgoing = new Events();
+		var self = this;
+		var connection, i, j, l, ln, postMessageListener;
+
+		//Session API hooks
+		self.on = incoming.on;
+		self.off = incoming.off;
+		self.trigger = outgoing.trigger;
+		self.end = function () {
+			incoming.off();
+			outgoing.off();
+			if (_window.removeEventListener) {
+				_window.removeEventListener('message', postMessageListener, false);
+			} else if (_window.detachEvent) {
+				_window.detachEvent('onmessage', postMessageListener);
+			}
+			return self;
+		};
+
+		//Establishing connections
+		for (i=0, l=args.length; i<l; i++) {
+			connection = new Connection(args[i]);
+			if (connection) {
+				for (j=0, ln=connections.length; j<ln; j++) {
+					if (
+						connections[j].connect === connection.connect &&
+						connections[j].from === connection.from &&
+						connections[j].to === connection.to
+					) {
+						connection = null;
+						break;
+					}
+				}
+				if (connection) {
+					connections.push(connection);
+				}
+			}
+		}
+
+		//Listener for incoming messages
+		postMessageListener = function(event){
+			var conn = null;
+			var message = [];
+			var data;
+			var k, len;
+
+			//Attempt to find the connection we're dealing with
+			for (k=0, len=connections.length; k<len; k++) {
+				if (connections[k].connect === event.source) {
+					conn = connections[k];
+					break;
+				}
+			}
+
+			//Check if we've found the connection
+			if (!conn) {
+				return false;
+			}
+
+			//Check if the message is from the expected origin
+			if (conn.from !== '*' && conn.from !== event.origin) {
+				return false;
+			}
+
+			//Check the data that's been passed
+			try{
+				data = JSON.parse(event.data);
+				if(!data.e){
+					return false;
+				}
+			}catch(e){
+				return false;
+			}
+
+			//Format the passed in data
+			message.push(data.e);
+			delete data.e;
+			for (k in data) {
+				message.push(data[k]);
+			}
+
+			//Send the message
+			incoming['trigger'].apply(root, message);
+		};
+
+		//Add the listener
+		if (_window.addEventListener) {
+			_window.addEventListener('message', postMessageListener, false);
+		} else if(_window.attachEvent) {
+			_window.attachEvent('onmessage', postMessageListener);
+		} else{
+			if (_window.console && _window.console.warn) {
+				_window.console.warn('WARNING: Postmonger could not listen for messages on window %o', _window);
+			}
+			return false;
+		}
+
+		//Sending outgoing messages
+		outgoing.on('all', function () {
+			var args = Array.prototype.slice.call(arguments, 0);
+			var message = {};
+			var k, len;
+
+			message.e = args[0];
+
+			for (k=1, len=args.length; k<len; k++) {
+				message['a' + k] = args[k];
+			}
+
+			for (k=0, len=connections.length; k<len; k++) {
+				connections[k].connect.postMessage(JSON.stringify(message), connections[k].to);
+			}
+		});
+
+		return self;
+	};
+
+	return Postmonger;
 }));
