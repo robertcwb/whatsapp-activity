@@ -1,181 +1,137 @@
-// customActivity.js
-;(function (window) {
-    'use strict';
+/* customActivity.js
+ * Send WhatsApp (Salesforce) - Journey Builder Custom Activity
+ */
 
-    console.log('📦 customActivity.js carregado');
+'use strict';
 
-    var connection = new Postmonger.Session();
-    var payload = {};
-    var eventDefinitionKey = null;
+var connection = new Postmonger.Session();
+var activityData = {};
 
-    // Expor para debug no console
-    window._whatsappActivity = {
-        connection: connection,
-        getPayload: function () { return payload; }
-    };
+console.log('🚀 WhatsApp Custom Activity carregada');
 
-    // ==== Eventos básicos do Journey Builder ====
-    connection.on('initActivity', initialize);
-    connection.on('requestedTokens', onTokens);
-    connection.on('requestedEndpoints', onEndpoints);
-    connection.on('requestedSchema', onSchema);
-    connection.on('clickedNext', save);
-    connection.on('clickedDone', save);
+// ========== EVENTS REGISTRADOS ==========
 
-    // ==== Quando DOM estiver pronto, dispara READY ====
-    document.addEventListener('DOMContentLoaded', function () {
-        console.log('🌐 DOM pronto, disparando ready/request*');
+// Quando a activity é inicializada
+connection.on('initActivity', onInit);
 
-        connection.trigger('ready');              // tira overlay / spinner principal
-        connection.trigger('requestTokens');      // opcional, mas bom ter
-        connection.trigger('requestEndpoints');   // opcional
-        connection.trigger('requestSchema');      // necessário p/ popular campos DE
+// Quando o Journey Builder envia o schema dos campos
+connection.on('requestedSchema', onRequestedSchema);
+
+// Quando o usuário clica em Next/Done no modal
+connection.on('clickedNext', onSave);
+
+// Quando estiver pronto
+connection.on('ready', function () {
+    console.log('✅ Postmonger ready, solicitando schema...');
+    connection.trigger('requestSchema');
+});
+
+// ========== HANDLERS ==========
+
+function onInit(payload) {
+    console.log('🔥 initActivity recebido:', payload);
+    activityData = payload || {};
+
+    // Recupera valores se a activity já estiver configurada
+    try {
+        if (activityData.arguments &&
+            activityData.arguments.execute &&
+            activityData.arguments.execute.inArguments &&
+            activityData.arguments.execute.inArguments.length > 0) {
+
+            var args = activityData.arguments.execute.inArguments[0];
+            console.log('🧩 inArguments atuais:', args);
+
+            // to: "{{Contact.Attribute.DE.PhoneNumber}}"
+            if (args.to) {
+                var toVal = args.to;
+                if (typeof toVal === 'string' &&
+                    toVal.indexOf('{{') === 0 &&
+                    toVal.lastIndexOf('}}') === toVal.length - 2) {
+                    // remove {{ }}
+                    var key = toVal.substring(2, toVal.length - 2);
+                    $('#phoneField').data('selectedKey', key); // guarda até o schema chegar
+                }
+            }
+
+            $('#templateName').val(args.templateName || '');
+            $('#langCode').val(args.languageCode || 'pt_BR');
+            $('#var1').val(args.var1 || '');
+            $('#var2').val(args.var2 || '');
+        }
+    } catch (e) {
+        console.error('Erro ao ler inArguments:', e);
+    }
+}
+
+function onRequestedSchema(schema) {
+    console.log('📦 Schema recebido:', schema);
+
+    var phoneSelect = $('#phoneField');
+    phoneSelect.empty();
+
+    if (!schema || !schema.schema || !schema.schema.length) {
+        phoneSelect.append('<option value="">Nenhum campo disponível</option>');
+        return;
+    }
+
+    phoneSelect.append('<option value="">Selecione...</option>');
+
+    schema.schema.forEach(function (field) {
+        // field.key vem no formato Contact.Attribute.DE.Campo
+        var key = field.key;
+        var name = field.name || key;
+
+        phoneSelect.append(
+            '<option value="' + key + '">' + name + '</option>'
+        );
     });
 
-    // ===================== INIT =====================
-    function initialize(data) {
-        console.log('🟢 initActivity recebido:', JSON.stringify(data || {}, null, 2));
+    // Se já tínhamos um key salvo (quando reabre a activity), seleciona ele
+    var selectedKey = phoneSelect.data('selectedKey');
+    if (selectedKey) {
+        phoneSelect.val(selectedKey);
+    }
+}
 
-        if (data) {
-            payload = data;
-        }
+function onSave() {
+    console.log('💾 Salvando configuração da activity...');
 
-        // EventDefinitionKey (às vezes vem em data)
-        try {
-            var hasConfig = payload && payload.arguments && payload.arguments.execute;
-            if (hasConfig && payload.arguments.execute) {
-                eventDefinitionKey = payload.arguments.execute.eventDefinitionKey;
-            } else if (payload.metaData && payload.metaData.eventDefinitionKey) {
-                eventDefinitionKey = payload.metaData.eventDefinitionKey;
-            }
-        } catch (e) {
-            console.warn('Não foi possível ler eventDefinitionKey:', e);
-        }
+    var phoneKey   = $('#phoneField').val();   // ex: Contact.Attribute.DE.PhoneNumber
+    var template   = $('#templateName').val();
+    var langCode   = $('#langCode').val();
+    var var1       = $('#var1').val();
+    var var2       = $('#var2').val();
 
-        console.log('📌 eventDefinitionKey:', eventDefinitionKey);
-
-        // Se já estava configurada, recuperar inArguments para preencher a tela
-        try {
-            var inArgs = (payload.arguments &&
-                          payload.arguments.execute &&
-                          payload.arguments.execute.inArguments) || [];
-
-            var config = inArgs[0] || {};
-            console.log('🔁 inArguments atuais:', JSON.stringify(config, null, 2));
-
-            if (config.phoneField) {
-                document.getElementById('phoneField').value = config.phoneField;
-            }
-            if (config.templateName) {
-                document.getElementById('templateName').value = config.templateName;
-            }
-            if (config.languageCode) {
-                document.getElementById('languageCode').value = config.languageCode;
-            }
-            if (config.var1Field) {
-                document.getElementById('var1Field').value = config.var1Field;
-            }
-        } catch (e) {
-            console.warn('Erro ao restaurar config da activity:', e);
-        }
+    if (!phoneKey || !template) {
+        alert('Preencha os campos obrigatórios: Telefone e Template.');
+        return;
     }
 
-    // ===================== TOKENS / ENDPOINTS =====================
-    function onTokens(tokens) {
-        console.log('🔑 Tokens recebidos:', tokens);
+    // Monta o token MC: {{Contact.Attribute.DE.PhoneNumber}}
+    var toToken = '{{' + phoneKey + '}}';
+
+    var inArgs = [{
+        to: toToken,
+        templateName: template,
+        languageCode: langCode,
+        var1: var1,
+        var2: var2
+    }];
+
+    // Garante estrutura
+    if (!activityData.arguments) {
+        activityData.arguments = {};
+    }
+    if (!activityData.arguments.execute) {
+        activityData.arguments.execute = {};
     }
 
-    function onEndpoints(endpoints) {
-        console.log('🌍 Endpoints recebidos:', endpoints);
-    }
+    activityData.arguments.execute.inArguments = inArgs;
+    activityData.metaData = activityData.metaData || {};
+    activityData.metaData.isConfigured = true;
 
-    // ===================== SCHEMA (campos da DE) =====================
-    function onSchema(schema) {
-        console.log('📄 Schema recebido:', JSON.stringify(schema || {}, null, 2));
+    console.log('📤 updateActivity payload:', activityData);
 
-        // Aqui você popula os selects com os campos da DE
-        // Vou assumir que você tem selects com esses IDs:
-        //   phoneField, var1Field
-        var phoneSelect = document.getElementById('phoneField');
-        var var1Select = document.getElementById('var1Field');
-
-        if (!schema || !schema.schema) {
-            console.warn('Schema vazio, não há campos para popular');
-            return;
-        }
-
-        // Limpa e adiciona opção padrão
-        function resetSelect(select, placeholder) {
-            if (!select) return;
-            while (select.firstChild) {
-                select.removeChild(select.firstChild);
-            }
-            var opt = document.createElement('option');
-            opt.value = '';
-            opt.textContent = placeholder;
-            select.appendChild(opt);
-        }
-
-        resetSelect(phoneSelect, 'Selecione o campo de telefone');
-        resetSelect(var1Select, 'Selecione o campo da variável 1');
-
-        schema.schema.forEach(function (entry) {
-            var key = entry.key;   // normalmente: "Event.DEName.FieldName"
-
-            if (phoneSelect) {
-                var o1 = document.createElement('option');
-                o1.value = key;
-                o1.textContent = key;
-                phoneSelect.appendChild(o1);
-            }
-
-            if (var1Select) {
-                var o2 = document.createElement('option');
-                o2.value = key;
-                o2.textContent = key;
-                var1Select.appendChild(o2);
-            }
-        });
-
-        console.log('✅ Selects populados com campos da DE');
-    }
-
-    // ===================== SALVAR (Done/Next) =====================
-    function save() {
-        console.log('💾 Salvando configuração da activity...');
-
-        // Garante estrutura mínima
-        payload.arguments = payload.arguments || {};
-        payload.arguments.execute = payload.arguments.execute || {};
-        payload.arguments.execute.inArguments = payload.arguments.execute.inArguments || [{}];
-        payload.metaData = payload.metaData || {};
-
-        var inArgs = payload.arguments.execute.inArguments[0];
-
-        // Lê valores da tela
-        var phoneField    = (document.getElementById('phoneField')    || {}).value || '';
-        var templateName  = (document.getElementById('templateName')  || {}).value || '';
-        var languageCode  = (document.getElementById('languageCode')  || {}).value || '';
-        var var1Field     = (document.getElementById('var1Field')     || {}).value || '';
-
-        // Valida minimamente
-        if (!phoneField || !templateName || !languageCode) {
-            alert('Preencha: Campo de Telefone, Nome do Template e Código do Idioma.');
-            console.warn('❌ Campos obrigatórios faltando');
-            return;
-        }
-
-        // Monta inArguments
-        inArgs.phoneField   = phoneField;
-        inArgs.templateName = templateName;
-        inArgs.languageCode = languageCode;
-        inArgs.var1Field    = var1Field;
-
-        // Flag dizendo que a activity está configurada
-        payload.metaData.isConfigured = true;
-
-        console.log('📤 Enviando updateActivity com payload:', JSON.stringify(payload, null, 2));
-        connection.trigger('updateActivity', payload);
-    }
-
-})(window);
+    connection.trigger('updateActivity', activityData);
+}
