@@ -4,6 +4,9 @@
 
 'use strict';
 
+// 👇 muda aqui quando quiser apontar pra outro lugar (n8n ou Apex)
+var EXECUTE_URL = 'https://n8naudaxintelli.app.n8n.cloud/webhook/59e26e7a-6499-4f0f-bc5c-d58cf72d0b8f';
+
 var connection = new Postmonger.Session();
 var activityData = {};
 
@@ -26,9 +29,8 @@ function onInit(payload) {
     console.log('🔥 initActivity recebido:', payload);
     activityData = payload || {};
 
-    // Log da URL de execute pra garantir que é n8n ou Salesforce
     if (activityData.arguments && activityData.arguments.execute) {
-        console.log('🌍 execute.url atual:', activityData.arguments.execute.url);
+        console.log('🌍 execute.url atual (antes do save):', activityData.arguments.execute.url);
     }
 
     // Recupera inArguments se já existirem
@@ -41,14 +43,12 @@ function onInit(payload) {
             var args = activityData.arguments.execute.inArguments[0];
             console.log('🧩 inArguments atuais:', args);
 
-            // to: "{{Contact.Attribute.DE.PhoneNumber}}"
             if (args.to) {
                 var toVal = args.to;
                 if (typeof toVal === 'string' &&
                     toVal.indexOf('{{') === 0 &&
                     toVal.lastIndexOf('}}') === toVal.length - 2) {
 
-                    // remove {{ }}
                     var key = toVal.substring(2, toVal.length - 2);
                     $('#phoneField').data('selectedKey', key);
                 }
@@ -63,7 +63,6 @@ function onInit(payload) {
         console.error('Erro ao ler inArguments:', e);
     }
 
-    // Depois do init, pede o schema dos campos
     console.log('📬 Solicitando schema ao Journey Builder...');
     connection.trigger('requestSchema');
 }
@@ -82,8 +81,7 @@ function onRequestedSchema(schema) {
     phoneSelect.append('<option value="">Selecione...</option>');
 
     schema.schema.forEach(function (field) {
-        // field.key vem no formato Contact.Attribute.DE.Campo
-        var key = field.key;
+        var key = field.key;              // Contact.Attribute.DE.Campo
         var name = field.name || key;
 
         phoneSelect.append(
@@ -91,7 +89,6 @@ function onRequestedSchema(schema) {
         );
     });
 
-    // Se tinha um campo salvo anteriormente, seleciona
     var selectedKey = phoneSelect.data('selectedKey');
     if (selectedKey) {
         phoneSelect.val(selectedKey);
@@ -101,7 +98,7 @@ function onRequestedSchema(schema) {
 function onSave() {
     console.log('💾 Salvando configuração da activity...');
 
-    var phoneKey   = $('#phoneField').val();   // ex: Contact.Attribute.DE.PhoneNumber
+    var phoneKey   = $('#phoneField').val();
     var template   = $('#templateName').val();
     var langCode   = $('#langCode').val();
     var var1       = $('#var1').val();
@@ -131,9 +128,14 @@ function onSave() {
     }
 
     activityData.arguments.execute.inArguments = inArgs;
+
+    // 👇 AQUI FORÇAMOS A URL DE EXECUTE
+    activityData.arguments.execute.url = EXECUTE_URL;
+
     activityData.metaData = activityData.metaData || {};
     activityData.metaData.isConfigured = true;
 
+    console.log('🌍 execute.url que será salva:', activityData.arguments.execute.url);
     console.log('📤 updateActivity payload:', activityData);
 
     connection.trigger('updateActivity', activityData);
