@@ -6,7 +6,7 @@
   "type": "REST",
 
   "lang": {
-    "en-US": {
+    "en": {
       "name": "Send WhatsApp (Salesforce)",
       "description": "Sends a WhatsApp template using a Salesforce Apex class."
     },
