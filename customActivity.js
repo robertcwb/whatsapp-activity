@@ -9,30 +9,24 @@ var activityData = {};
 
 console.log('🚀 WhatsApp Custom Activity carregada');
 
-// ========== EVENTS REGISTRADOS ==========
-
-// Quando a activity é inicializada
-connection.on('initActivity', onInit);
-
-// Quando o Journey Builder envia o schema dos campos
-connection.on('requestedSchema', onRequestedSchema);
-
-// Quando o usuário clica em Next/Done no modal
-connection.on('clickedNext', onSave);
-
-// Quando estiver pronto
-connection.on('ready', function () {
-    console.log('✅ Postmonger ready, solicitando schema...');
-    connection.trigger('requestSchema');
+// ==== AVISA O JOURNEY BUILDER QUE A ACTIVITY ESTÁ PRONTA ====
+$(window).ready(function () {
+    console.log('🟢 Window ready, enviando "ready" para o Journey Builder...');
+    connection.trigger('ready');
 });
 
-// ========== HANDLERS ==========
+// ==== EVENTOS REGISTRADOS ====
+connection.on('initActivity', onInit);
+connection.on('requestedSchema', onRequestedSchema);
+connection.on('clickedNext', onSave);
+
+// ==== HANDLERS ====
 
 function onInit(payload) {
     console.log('🔥 initActivity recebido:', payload);
     activityData = payload || {};
 
-    // Recupera valores se a activity já estiver configurada
+    // Recupera inArguments se já existirem
     try {
         if (activityData.arguments &&
             activityData.arguments.execute &&
@@ -48,9 +42,10 @@ function onInit(payload) {
                 if (typeof toVal === 'string' &&
                     toVal.indexOf('{{') === 0 &&
                     toVal.lastIndexOf('}}') === toVal.length - 2) {
+
                     // remove {{ }}
                     var key = toVal.substring(2, toVal.length - 2);
-                    $('#phoneField').data('selectedKey', key); // guarda até o schema chegar
+                    $('#phoneField').data('selectedKey', key);
                 }
             }
 
@@ -62,6 +57,10 @@ function onInit(payload) {
     } catch (e) {
         console.error('Erro ao ler inArguments:', e);
     }
+
+    // Depois do init, pede o schema dos campos
+    console.log('📬 Solicitando schema ao Journey Builder...');
+    connection.trigger('requestSchema');
 }
 
 function onRequestedSchema(schema) {
@@ -87,7 +86,7 @@ function onRequestedSchema(schema) {
         );
     });
 
-    // Se já tínhamos um key salvo (quando reabre a activity), seleciona ele
+    // Se tinha um campo salvo anteriormente, seleciona
     var selectedKey = phoneSelect.data('selectedKey');
     if (selectedKey) {
         phoneSelect.val(selectedKey);
@@ -108,7 +107,7 @@ function onSave() {
         return;
     }
 
-    // Monta o token MC: {{Contact.Attribute.DE.PhoneNumber}}
+    // Monta token: {{Contact.Attribute.DE.PhoneNumber}}
     var toToken = '{{' + phoneKey + '}}';
 
     var inArgs = [{
@@ -119,7 +118,6 @@ function onSave() {
         var2: var2
     }];
 
-    // Garante estrutura
     if (!activityData.arguments) {
         activityData.arguments = {};
     }
