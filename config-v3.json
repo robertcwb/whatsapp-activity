@@ -25,7 +25,7 @@
     "execute": {
       "inArguments": [],
       "outArguments": [],
-      "url": "https://consorcioservopa.my.salesforce.com/services/apexrest/wa/send",
+      "url": "https://consorcioservopa.my.site.com/servopamcwebhook/services/apexrest/wa/send",
       "verb": "POST",
       "body": "",
       "header": {
