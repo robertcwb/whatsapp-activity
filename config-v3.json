@@ -25,7 +25,7 @@
     "execute": {
       "inArguments": [],
       "outArguments": [],
-      "url": "https://n8naudaxintelli.app.n8n.cloud/webhook/59e26e7a-6499-4f0f-bc5c-d58cf72d0b8f",
+      "url": "https://consorcioservopa.my.salesforce.com/services/apexrest/wa/send",
       "verb": "POST",
       "body": "",
       "header": "",
