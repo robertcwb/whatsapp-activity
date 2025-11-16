@@ -2,210 +2,63 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Configuração WhatsApp Sender</title>
+    <title>Teste WhatsApp Activity</title>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Postmonger local no mesmo repo -->
     <script src="postmonger.js"></script>
 
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
             padding: 20px;
-            background-color: #f4f6f9;
         }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        h2 {
-            color: #032d60;
-            margin-top: 0;
-            border-bottom: 2px solid #0176d3;
-            padding-bottom: 10px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #3e3e3c;
-        }
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #c9c9c9;
-            border-radius: 4px;
-            font-size: 14px;
-            box-sizing: border-box;
-        }
-        input:focus, select:focus {
-            outline: none;
-            border-color: #0176d3;
-            box-shadow: 0 0 3px rgba(1,118,211,0.5);
-        }
-        .help-text {
-            font-size: 12px;
-            color: #706e6b;
-            margin-top: 5px;
-        }
-        .info-box {
-            background-color: #e8f4fd;
-            border-left: 4px solid #0176d3;
+        .info {
             padding: 15px;
-            margin-bottom: 20px;
             border-radius: 4px;
+            background: #e8f4fd;
+            border-left: 4px solid #0176d3;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <h2>📱 Configuração de Envio de WhatsApp</h2>
-
-    <div class="info-box">
-        <p><strong>ℹ️ Como funciona:</strong> Esta atividade enviará templates do WhatsApp através da sua classe Apex no Salesforce.</p>
+    <h2>🔧 Teste de Configuração da Activity</h2>
+    <div class="info">
+        <p>Se você conseguir clicar em <strong>Done</strong> no Journey e o modal fechar,
+        significa que o handshake com o Journey Builder está funcionando.</p>
     </div>
 
-    <div class="form-group">
-        <label for="phoneField">Campo do Telefone *</label>
-        <input type="text" id="phoneField" placeholder="Ex: MobileNumber" value="MobileNumber" />
-        <div class="help-text">Nome da coluna na Data Extension que contém o número de telefone (ex: MobileNumber)</div>
-    </div>
+    <script>
+        var connection = new Postmonger.Session();
+        var activity = {};
 
-    <div class="form-group">
-        <label for="templateName">Nome do Template *</label>
-        <input type="text" id="templateName" placeholder="Ex: black_servopa" value="black_servopa" />
-        <div class="help-text">Nome exato do template aprovado na Meta</div>
-    </div>
+        console.log("🔵 index.html carregado, enviando READY...");
 
-    <div class="form-group">
-        <label for="languageCode">Código do Idioma *</label>
-        <select id="languageCode">
-            <option value="en">English (en)</option>
-            <option value="en_US">English US (en_US)</option>
-            <option value="pt_BR" selected>Português Brasil (pt_BR)</option>
-            <option value="es">Español (es)</option>
-        </select>
-        <div class="help-text">Idioma do template configurado na Meta</div>
-    </div>
+        // Quando o iframe carrega
+        document.addEventListener("DOMContentLoaded", function () {
+            connection.trigger("ready");
+        });
 
-    <div class="form-group">
-        <label for="var1Field">Variável 1 (Opcional)</label>
-        <input type="text" id="var1Field" placeholder="Ex: FirstName" />
-        <div class="help-text">Nome da coluna para a primeira variável do template</div>
-    </div>
+        // Quando o Journey manda os dados iniciais
+        connection.on("initActivity", function (payload) {
+            console.log("✅ initActivity recebido:", payload);
+            activity = payload || {};
+            connection.trigger("updateButton", { button: "next", enabled: true });
+        });
 
-    <div class="form-group">
-        <label for="var2Field">Variável 2 (Opcional)</label>
-        <input type="text" id="var2Field" placeholder="Ex: DiscountPercentage" />
-        <div class="help-text">Nome da coluna para a segunda variável do template</div>
-    </div>
-</div>
+        // Quando o usuário clica em Done
+        connection.on("clickedNext", function () {
+            console.log("🟢 clickedNext recebido, enviando updateActivity...");
 
-<script type="text/javascript">
-    var connection = new Postmonger.Session();
-    var activity = {};
+            // Só marca como configurado, sem mexer em inArguments
+            activity.metaData = activity.metaData || {};
+            activity.metaData.isConfigured = true;
 
-    // Quando o iframe carregar
-    document.addEventListener('DOMContentLoaded', function () {
-        console.log('UI carregada, disparando READY');
-        connection.trigger('ready');
-    });
+            // Desabilita o botão para evitar clique duplo
+            connection.trigger("updateButton", { button: "next", enabled: false });
 
-    // Journey manda payload inicial
-    connection.on('initActivity', function (payload) {
-        console.log('initActivity payload:', payload);
-        activity = payload || {};
-
-        try {
-            var inArgs =
-                activity.arguments &&
-                activity.arguments.execute &&
-                activity.arguments.execute.inArguments &&
-                activity.arguments.execute.inArguments[0];
-
-            if (inArgs) {
-                if (inArgs.to) {
-                    var phoneMatch = inArgs.to.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
-                    if (phoneMatch) {
-                        $('#phoneField').val(phoneMatch[1]);
-                    }
-                }
-                if (inArgs.templateName && !inArgs.templateName.includes('{{')) {
-                    $('#templateName').val(inArgs.templateName);
-                }
-                if (inArgs.languageCode && !inArgs.languageCode.includes('{{')) {
-                    $('#languageCode').val(inArgs.languageCode);
-                }
-                if (inArgs.var1) {
-                    var v1 = inArgs.var1.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
-                    if (v1) $('#var1Field').val(v1[1]);
-                }
-                if (inArgs.var2) {
-                    var v2 = inArgs.var2.match(/\{\{Contact\.Attribute\.DataExtension\.(.+?)\}\}/);
-                    if (v2) $('#var2Field').val(v2[1]);
-                }
-            }
-        } catch (e) {
-            console.error('Erro ao processar inArguments:', e);
-        }
-
-        // Habilita o botão Next/Done
-        connection.trigger('updateButton', { button: 'next', enabled: true });
-    });
-
-    // Clique em Done/Next no Journey
-    connection.on('clickedNext', function () {
-        console.log('clickedNext');
-
-        var phoneField = $('#phoneField').val().trim();
-        var templateName = $('#templateName').val().trim();
-        var languageCode = $('#languageCode').val();
-        var var1Field = $('#var1Field').val().trim();
-        var var2Field = $('#var2Field').val().trim();
-
-        if (!phoneField || !templateName || !languageCode) {
-            alert('Por favor, preencha Campo do Telefone, Nome do Template e Código do Idioma.');
-            return;
-        }
-
-        var inArguments = {
-            to: '{{Contact.Attribute.DataExtension.' + phoneField + '}}',
-            templateName: templateName,
-            languageCode: languageCode
-        };
-
-        if (var1Field) {
-            inArguments.var1 = '{{Contact.Attribute.DataExtension.' + var1Field + '}}';
-        }
-        if (var2Field) {
-            inArguments.var2 = '{{Contact.Attribute.DataExtension.' + var2Field + '}}';
-        }
-
-        // Monta o payload final
-        activity.arguments = activity.arguments || {};
-        activity.arguments.execute = activity.arguments.execute || {};
-        activity.arguments.execute.inArguments = [inArguments];
-
-        activity.metaData = activity.metaData || {};
-        activity.metaData.isConfigured = true;
-
-        console.log('🔵 Enviando updateActivity:', JSON.stringify(activity, null, 2));
-
-        // Desabilita o botão pra evitar duplo clique
-        connection.trigger('updateButton', { button: 'next', enabled: false });
-
-        // Notifica o Journey Builder que está configurado
-        connection.trigger('updateActivity', activity);
-    });
-</script>
+            // Entrega a activity de volta para o Journey
+            connection.trigger("updateActivity", activity);
+        });
+    </script>
 </body>
 </html>
