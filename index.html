@@ -29,29 +29,39 @@
             margin-top: 5px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            box-sizing: border-box;
         }
-        small { color: #666; }
+        small { color: #666; display:block; margin-top:4px; }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h2>Configuração de Envio de WhatsApp - V</h2>
+        <h2>Configuração de Envio de WhatsApp - V6</h2>
 
+        <!-- Campo do telefone -->
         <label for="phoneField">Campo do Telefone *</label>
         <select id="phoneField">
             <option value="">Carregando campos...</option>
         </select>
         <small>Selecione o campo da Data Extension que contém o número de telefone.</small>
 
+        <!-- Nome do template -->
         <label for="templateName">Nome do Template *</label>
         <input id="templateName" type="text" placeholder="ex: black_servopa" />
 
+        <!-- Idioma -->
         <label for="langCode">Idioma *</label>
         <select id="langCode">
             <option value="en" selected>English (en_US)</option>
             <option value="pt_BR">Português Brasil (pt_BR)</option>
         </select>
+
+        <!-- 🔥 NOVO: URL da imagem do Content Builder / link público -->
+        <label for="imageUrl">URL da Imagem (opcional)</label>
+        <input id="imageUrl" type="url"
+               placeholder="https://image.mktcloud.consorcioservopa.com.br/lib/.../banner.jpeg" />
+        <small>Use a URL pública da imagem do Content Builder para templates com header de imagem.</small>
     </div>
 </body>
 </html>
