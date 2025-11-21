@@ -38,6 +38,7 @@ function onInit(payload) {
             var args = activityData.arguments.execute.inArguments[0];
             console.log('🧩 inArguments atuais:', args);
 
+            // Campo do telefone
             if (args.to) {
                 var toVal = args.to;
                 if (typeof toVal === 'string' &&
@@ -49,8 +50,16 @@ function onInit(payload) {
                 }
             }
 
+            // Nome do template
             $('#templateName').val(args.templateName || '');
+
+            // Idioma
             $('#langCode').val(args.languageCode || 'en');
+
+            // 🔥 NOVO: URL da imagem (se já tiver salvo na activity)
+            if (args.imageUrl) {
+                $('#imageUrl').val(args.imageUrl);
+            }
         }
     } catch (e) {
         console.error('Erro ao ler inArguments:', e);
@@ -91,9 +100,10 @@ function onRequestedSchema(schema) {
 function onSave() {
     console.log('💾 Salvando configuração da activity...');
 
-    var phoneKey   = $('#phoneField').val();
-    var template   = $('#templateName').val();
-    var langCode   = $('#langCode').val() || 'en';  // default inglês
+    var phoneKey = $('#phoneField').val();
+    var template = $('#templateName').val();
+    var langCode = $('#langCode').val() || 'en'; // default inglês
+    var imageUrl = $('#imageUrl').val();         // 🔥 NOVO: campo de imagem
 
     if (!phoneKey || !template) {
         alert('Preencha os campos obrigatórios: Telefone e Template.');
@@ -103,13 +113,20 @@ function onSave() {
     // Ex: {{Event.DEAudience-xxx.PhoneNumber}}
     var toToken = '{{' + phoneKey + '}}';
 
-   var inArgs = [{
+    // Monta inArguments principal
+    var inArgBase = {
         to: toToken,
         templateName: template,
         languageCode: langCode,
         apiKey: '7a8e3bd0f4514d0e8a6bb31c41a79c32' // mesma chave que você definiu no Apex
-    }];
+    };
 
+    // Só envia imageUrl se tiver preenchido
+    if (imageUrl && imageUrl.trim() !== '') {
+        inArgBase.imageUrl = imageUrl.trim();
+    }
+
+    var inArgs = [ inArgBase ];
 
     if (!activityData.arguments) {
         activityData.arguments = {};
