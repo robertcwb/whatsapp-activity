@@ -39,6 +39,14 @@
     <div class="container">
         <h2>Configuração de Envio de WhatsApp - V6</h2>
 
+        <!-- 🔥 NOVO: Canal de Saída -->
+        <label for="phone_id">Canal de Saída (Phone ID)</label>
+        <select id="phone_id">
+            <option value="" selected>Servopa Private (Padrão)</option>
+            <option value="827790747093981">C6 (Novo)</option>
+        </select>
+        <small>Escolha por qual número a mensagem será enviada.</small>
+
         <!-- Campo do telefone -->
         <label for="phoneField">Campo do Telefone *</label>
         <select id="phoneField">
@@ -57,7 +65,7 @@
             <option value="pt_BR">Português Brasil (pt_BR)</option>
         </select>
 
-        <!-- 🔥 NOVO: URL da imagem do Content Builder / link público -->
+        <!-- URL da imagem -->
         <label for="imageUrl">URL da Imagem (opcional)</label>
         <input id="imageUrl" type="url"
                placeholder="https://image.mktcloud.consorcioservopa.com.br/lib/.../banner.jpeg" />
