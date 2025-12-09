@@ -56,9 +56,14 @@ function onInit(payload) {
             // Idioma
             $('#langCode').val(args.languageCode || 'en');
 
-            // 🔥 NOVO: URL da imagem (se já tiver salvo na activity)
+            // URL da imagem
             if (args.imageUrl) {
                 $('#imageUrl').val(args.imageUrl);
+            }
+
+            // 🔥 NOVO: Carrega o Phone ID salvo
+            if (args.phone_id) {
+                $('#phone_id').val(args.phone_id);
             }
         }
     } catch (e) {
@@ -103,7 +108,8 @@ function onSave() {
     var phoneKey = $('#phoneField').val();
     var template = $('#templateName').val();
     var langCode = $('#langCode').val() || 'en'; // default inglês
-    var imageUrl = $('#imageUrl').val();         // 🔥 NOVO: campo de imagem
+    var imageUrl = $('#imageUrl').val();
+    var phoneId = $('#phone_id').val();         // 🔥 NOVO: Pega o valor do novo select
 
     if (!phoneKey || !template) {
         alert('Preencha os campos obrigatórios: Telefone e Template.');
@@ -118,7 +124,8 @@ function onSave() {
         to: toToken,
         templateName: template,
         languageCode: langCode,
-        apiKey: '7a8e3bd0f4514d0e8a6bb31c41a79c32' // mesma chave que você definiu no Apex
+        apiKey: '7a8e3bd0f4514d0e8a6bb31c41a79c32', // mesma chave que você definiu no Apex
+        phone_id: phoneId || null // Envia para o Apex
     };
 
     // Só envia imageUrl se tiver preenchido
