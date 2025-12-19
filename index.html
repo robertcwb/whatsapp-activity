@@ -2,12 +2,10 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8" />
-    <title>Enviar WhatsApp (Salesforce) - V3</title>
-
+    <title>Enviar WhatsApp (Salesforce) - V4 (C6)</title>
     <script src="jquery.min.js"></script>
     <script src="postmonger.js"></script>
-    <script src="customActivity-v3.js"></script>
-
+    <script src="customActivity-v3.js"></script> <!-- Certifique-se que o nome do JS está correto aqui -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -32,39 +30,54 @@
             box-sizing: border-box;
         }
         small { color: #666; display:block; margin-top:4px; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+        .optional-section { background: #f9f9fa; padding: 15px; border-radius: 6px; border: 1px dashed #ccc; }
     </style>
 </head>
-
 <body>
     <div class="container">
-        <h2>Configuração de Envio de WhatsApp - V6</h2>
-
-        <!-- 🔥 NOVO: Canal de Saída -->
+        <h2>Configuração de Envio de WhatsApp - V6 (C6)</h2>
+        <!-- Canal de Saída -->
         <label for="phone_id">Canal de Saída (Phone ID)</label>
         <select id="phone_id">
             <option value="" selected>Servopa Private (Padrão)</option>
             <option value="827790747093981">C6 (Novo)</option>
         </select>
         <small>Escolha por qual número a mensagem será enviada.</small>
-
         <!-- Campo do telefone -->
         <label for="phoneField">Campo do Telefone *</label>
         <select id="phoneField">
             <option value="">Carregando campos...</option>
         </select>
         <small>Selecione o campo da Data Extension que contém o número de telefone.</small>
-
+        <hr />
+        <!-- Mapeamento Variáveis C6 -->
+        <div class="optional-section">
+            <h3 style="margin-top:0; font-size:16px; color:#555;">Mapeamento de Variáveis (Opcional)</h3>
+            <small style="margin-bottom:10px;">Preencha apenas os campos que seu template utiliza.</small>
+            <label for="nomeClienteField">Nome do Cliente ({{1}})</label>
+            <select id="nomeClienteField"><option value="">Carregando...</option></select>
+            <label for="nomeAtendenteField">Nome do Atendente ({{2}} ou {{1}})</label>
+            <select id="nomeAtendenteField"><option value="">Carregando...</option></select>
+            <label for="pixField">Código PIX</label>
+            <select id="pixField"><option value="">Carregando...</option></select>
+            <label for="vencimentoField">Data Vencimento</label>
+            <select id="vencimentoField"><option value="">Carregando...</option></select>
+            <label for="pagamentoField">Método de Pagamento</label>
+            <select id="pagamentoField"><option value="">Carregando...</option></select>
+            <label for="contratoField">Link do Contrato</label>
+            <select id="contratoField"><option value="">Carregando...</option></select>
+        </div>
+        <hr />
         <!-- Nome do template -->
         <label for="templateName">Nome do Template *</label>
         <input id="templateName" type="text" placeholder="ex: black_servopa" />
-
         <!-- Idioma -->
         <label for="langCode">Idioma *</label>
         <select id="langCode">
             <option value="en" selected>English (en_US)</option>
             <option value="pt_BR">Português Brasil (pt_BR)</option>
         </select>
-
         <!-- URL da imagem -->
         <label for="imageUrl">URL da Imagem (opcional)</label>
         <input id="imageUrl" type="url"
