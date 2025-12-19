@@ -4,7 +4,6 @@
   "name": "Send WhatsApp (Salesforce)",
   "description": "Envia um template do WhatsApp usando uma classe Apex do Salesforce.",
   "type": "REST",
-
   "lang": {
     "en": {
       "name": "Send WhatsApp (Salesforce)",
@@ -15,15 +14,25 @@
       "description": "Envia um template do WhatsApp usando uma classe Apex do Salesforce."
     }
   },
-
   "metaData": {
     "icon": "images/icon.png",
     "category": "message"
   },
-
   "arguments": {
     "execute": {
-      "inArguments": [],
+      "inArguments": [
+        { "to": "" },
+        { "templateName": "" },
+        { "languageCode": "pt-BR" },
+        { "phone_id": "" },
+        { "imageUrl": "" },
+        { "nome_cliente": "" },
+        { "nome_atendente": "" },
+        { "codigo_pix": "" },
+        { "data_vencimento": "" },
+        { "metodo_pagamento": "" },
+        { "link_contrato": "" }
+      ],
       "outArguments": [],
       "url": "https://consorcioservopa.my.site.com/servopamcwebhook/services/apexrest/wa/send",
       "verb": "POST",
@@ -37,14 +46,12 @@
       "timeout": 10000
     }
   },
-
   "configurationArguments": {
     "applicationExtensionKey": "90083f01-7bb6-4ee7-bbc1-716133ae5917"
   },
-
   "userInterfaces": {
     "configModal": {
-      "url": "https://robertcwb.github.io/whatsapp-activity/index-v3.html",
+      "url": "index.html",
       "height": 650,
       "width": 1000,
       "fullscreen": false
