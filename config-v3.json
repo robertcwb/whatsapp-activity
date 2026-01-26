@@ -1,0 +1,54 @@
+{
+  "workflowApiVersion": "1.1",
+  "key": "90083f01-7bb6-4ee7-bbc1-716133ae5917",
+  "name": "Send WhatsApp (Salesforce)",
+  "description": "Envia um template do WhatsApp usando uma classe Apex do Salesforce.",
+  "type": "REST",
+  "lang": {
+    "en": {
+      "name": "Send WhatsApp (Salesforce)",
+      "description": "Sends a WhatsApp template using a Salesforce Apex class."
+    },
+    "pt-BR": {
+      "name": "Enviar WhatsApp (Salesforce)",
+      "description": "Envia um template do WhatsApp usando uma classe Apex do Salesforce."
+    }
+  },
+  "metaData": {
+    "icon": "images/icon.png",
+    "category": "message"
+  },
+  "arguments": {
+    "execute": {
+      "inArguments": [
+        { "to": "" },
+        { "templateName": "" },
+        { "languageCode": "pt-BR" },
+        { "phone_id": "" },
+        { "imageUrl": "" }
+      ],
+      "outArguments": [],
+      "url": "https://consorcioservopa.my.site.com/servopamcwebhook/services/apexrest/wa/send",
+      "verb": "POST",
+      "body": "",
+      "header": {
+        "x-api-key": "7a8e3bd0f4514d0e8a6bb31c41a79c32",
+        "Content-Type": "application/json"
+      },
+      "format": "json",
+      "useJwt": false,
+      "timeout": 10000
+    }
+  },
+  "configurationArguments": {
+    "applicationExtensionKey": "90083f01-7bb6-4ee7-bbc1-716133ae5917"
+  },
+  "userInterfaces": {
+    "configModal": {
+      "url": "index.html",
+      "height": 800,
+      "width": 1000,
+      "fullscreen": false
+    }
+  }
+}

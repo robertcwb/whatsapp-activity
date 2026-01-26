@@ -1,0 +1,26 @@
+/* util.css */
+* {
+    box-sizing: border-box;
+}
+
+.grid-row {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.grid-col {
+    flex: 1;
+}
+
+.m-t-10 { margin-top: 10px; }
+.m-t-20 { margin-top: 20px; }
+.p-20 { padding: 20px; }
+.w-full { width: 100%; }
+
+@media (max-width: 600px) {
+    .grid-row {
+        flex-direction: column;
+        gap: 5px;
+    }
+}

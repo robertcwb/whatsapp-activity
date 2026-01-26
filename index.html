@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <title>Enviar WhatsApp (Salesforce) - V7</title>
+    
+    <!-- Icon & Meta -->
+    <link rel="icon" type="image/png" href="images/icons/favicon.ico" />
+    
+    <!-- CSS Externalizado -->
+    <link rel="stylesheet" type="text/css" href="css/util.css">
+    <link rel="stylesheet" type="text/css" href="css/main.css">
+    
+    <!-- Scripts -->
+    <script src="jquery.min.js"></script>
+    <script src="postmonger.js"></script>
+    <script src="customActivity-v3.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Título oculto via CSS no Journey Builder -->
+        <h2>Configuração de Envio de WhatsApp - V7</h2>
+        
+        <!-- Top Grid: Canal e Telefone -->
+        <div class="grid-row">
+            <div class="grid-col">
+                <label for="phone_id">Canal de Saída</label>
+                <select id="phone_id">
+                    <option value="" selected>Servopa Private</option>
+                    <option value="827790747093981">C6 Bank</option>
+                </select>
+            </div>
+            <div class="grid-col">
+                <label for="phoneField">Campo do Telefone *</label>
+                <select id="phoneField">
+                    <option value="">Carregando...</option>
+                </select>
+            </div>
+        </div>
+        <small>Selecione o canal e a coluna da Data Extension com o número.</small>
+
+        <hr />
+
+        <!-- Seleção de Template -->
+        <label for="templateSelect">Selecione o Modelo (Template) *</label>
+        <select id="templateSelect">
+            <option value="">Carregando templates...</option>
+        </select>
+        <input type="hidden" id="templateName" />
+
+        <!-- Preview do Template -->
+        <div id="templatePreview" style="display:none;">
+            <strong>Preview:</strong>
+            <div id="previewBody" style="margin-top:5px; white-space:pre-wrap;"></div>
+        </div>
+
+        <hr />
+
+        <!-- Mapeamento Variáveis Dinâmico -->
+        <div id="variablesContainer" style="display:none;" class="optional-section">
+            <h3 style="margin-top:0; font-size:15px; color:#555;">Mapeamento de Variáveis</h3>
+            <div id="dynamicFields">
+                <!-- Inputs gerados via JS -->
+            </div>
+            <small style="margin-top:8px;">Vincule cada {{variável}} do template a uma coluna da sua base.</small>
+        </div>
+
+        <hr />
+
+        <div class="grid-row">
+            <div class="grid-col">
+                <!-- Idioma -->
+                <label for="langCode">Idioma *</label>
+                <select id="langCode">
+                    <option value="pt_BR" selected>Português Brasil</option>
+                    <option value="en_US">English (US)</option>
+                </select>
+            </div>
+            <div class="grid-col">
+                <!-- URL da imagem -->
+                <label for="imageUrl">URL da Imagem (opcional)</label>
+                <input id="imageUrl" type="url" placeholder="https://..." />
+            </div>
+        </div>
+        <small>Imagem necessária apenas para templates com Header de mídia.</small>
+    </div>
+</body>
+</html>
