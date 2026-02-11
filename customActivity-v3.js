@@ -262,7 +262,7 @@ function onSave() {
         inArguments.pixItem = '{{' + pixItemField + '}}';
     }
     
-    console.log('inArguments constructed:', JSON.stringify(inArguments));
+
 
     // Coleta variáveis dinâmicas
     $('.dynamic-var-select').each(function() {
