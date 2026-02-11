@@ -43,6 +43,16 @@ function onInit(payload) {
                 $('#phoneField').data('savedKey', key);
             }
 
+            // PIX Restore
+            if (args.pixKey) {
+                 var key = args.pixKey.replace('{{', '').replace('}}', '');
+                 $('#pixKeyField').data('savedKey', key);
+            }
+            if (args.pixAmount) {
+                 var val = args.pixAmount.replace('{{', '').replace('}}', '');
+                 $('#pixAmountField').data('savedKey', val);
+            }
+
             // Salva o template selecionado para restaurar após o fetch
             if (args.templateName) {
                 $('#templateSelect').data('savedTemplate', args.templateName);
@@ -195,7 +205,10 @@ function onTemplateChanged() {
 function onRequestedSchema(schema) {
     console.log('📦 Schema recebido:', schema);
     DE_SCHEMA = schema.schema || [];
+    DE_SCHEMA = schema.schema || [];
     populateFields('#phoneField');
+    populateFields('#pixKeyField');
+    populateFields('#pixAmountField');
 }
 
 function populateFields(selectId) {
@@ -227,6 +240,16 @@ function onSave() {
         apiKey: '7a8e3bd0f4514d0e8a6bb31c41a79c32',
         to: '{{' + phoneField + '}}'
     };
+
+    // PIX
+    var pixKeyField = $('#pixKeyField').val();
+    if (pixKeyField) {
+        inArguments.pixKey = '{{' + pixKeyField + '}}';
+    }
+    var pixAmountField = $('#pixAmountField').val();
+    if (pixAmountField) {
+        inArguments.pixAmount = '{{' + pixAmountField + '}}';
+    }
 
     // Coleta variáveis dinâmicas
     $('.dynamic-var-select').each(function() {
