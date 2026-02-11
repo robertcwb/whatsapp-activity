@@ -251,14 +251,18 @@ function onSave() {
     if (pixKeyField) {
         inArguments.pixKey = '{{' + pixKeyField + '}}';
     }
+    
     var pixAmountField = $('#pixAmountField').val();
     if (pixAmountField) {
         inArguments.pixAmount = '{{' + pixAmountField + '}}';
     }
+    
     var pixItemField = $('#pixItemField').val();
     if (pixItemField) {
         inArguments.pixItem = '{{' + pixItemField + '}}';
     }
+    
+    console.log('inArguments constructed:', JSON.stringify(inArguments));
 
     // Coleta variáveis dinâmicas
     $('.dynamic-var-select').each(function() {
@@ -280,4 +284,3 @@ function onSave() {
 
     connection.trigger('updateActivity', activityData);
 }
- 
