@@ -52,6 +52,10 @@ function onInit(payload) {
                  var val = args.pixAmount.replace('{{', '').replace('}}', '');
                  $('#pixAmountField').data('savedKey', val);
             }
+             if (args.pixItem) {
+                 var val = args.pixItem.replace('{{', '').replace('}}', '');
+                 $('#pixItemField').data('savedKey', val);
+            }
 
             // Salva o template selecionado para restaurar após o fetch
             if (args.templateName) {
@@ -209,6 +213,7 @@ function onRequestedSchema(schema) {
     populateFields('#phoneField');
     populateFields('#pixKeyField');
     populateFields('#pixAmountField');
+    populateFields('#pixItemField');
 }
 
 function populateFields(selectId) {
@@ -249,6 +254,10 @@ function onSave() {
     var pixAmountField = $('#pixAmountField').val();
     if (pixAmountField) {
         inArguments.pixAmount = '{{' + pixAmountField + '}}';
+    }
+    var pixItemField = $('#pixItemField').val();
+    if (pixItemField) {
+        inArguments.pixItem = '{{' + pixItemField + '}}';
     }
 
     // Coleta variáveis dinâmicas
