@@ -280,3 +280,4 @@ function onSave() {
 
     connection.trigger('updateActivity', activityData);
 }
+ 
