@@ -71,21 +71,49 @@
         <!-- Configuração Opcional de PIX -->
          <div class="optional-section">
             <h3 style="margin-top:0; font-size:15px; color:#555;">Configuração PIX (Para botões de Pagamento)</h3>
+            <!-- Tipo de Pagamento -->
             <div class="grid-row">
                 <div class="grid-col">
-                    <label for="pixKeyField">Chave PIX (CNPJ/EVP)</label>
-                    <select id="pixKeyField">
-                        <option value="">(Opcional) Selecione...</option>
+                    <label for="paymentType">Tipo de Pagamento</label>
+                    <select id="paymentType" onchange="togglePaymentFields()">
+                        <option value="pix" selected>PIX</option>
+                        <option value="boleto">Boleto</option>
                     </select>
                 </div>
+            </div>
+
+            <!-- Campos PIX -->
+            <div id="pixFields">
+                <div class="grid-row">
+                    <div class="grid-col">
+                        <label for="pixKeyField">Chave PIX (CNPJ/EVP)</label>
+                        <select id="pixKeyField">
+                            <option value="">(Opcional) Selecione...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campos Boleto -->
+            <div id="boletoFields" style="display:none;">
+                <div class="grid-row">
+                     <div class="grid-col">
+                        <label for="boletoLineField">Linha Digitável (Boleto)</label>
+                        <select id="boletoLineField">
+                            <option value="">(Opcional) Selecione...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campos Comuns -->
+            <div class="grid-row" style="margin-top: 10px;">
                 <div class="grid-col">
                     <label for="pixAmountField">Valor (R$)</label>
                     <select id="pixAmountField">
                         <option value="">(Opcional) Selecione...</option>
                     </select>
                 </div>
-            </div>
-            <div class="grid-row" style="margin-top: 10px;">
                  <div class="grid-col">
                     <label for="pixItemField">Descrição do Item (Opcional)</label>
                     <select id="pixItemField">
@@ -93,7 +121,8 @@
                     </select>
                  </div>
             </div>
-            <small>Selecione os campos da base que contêm a Chave, Valor e Descrição.</small>
+            
+            <small>Selecione os campos correspondentes ao tipo de pagamento escolhido.</small>
         </div>
 
         <hr />
