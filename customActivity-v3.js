@@ -12,6 +12,17 @@ var AVAILABLE_TEMPLATES = [];
 
 console.log('🚀 WhatsApp Custom Activity V7 (Dynamic) carregada');
 
+function togglePaymentFields() {
+    var type = $('#paymentType').val();
+    if (type === 'boleto') {
+        $('#boletoFields').show();
+        $('#pixFields').hide();
+    } else {
+        $('#boletoFields').hide();
+        $('#pixFields').show();
+    }
+}
+
 $(window).ready(function () {
     connection.trigger('ready');
     
@@ -55,6 +66,15 @@ function onInit(payload) {
              if (args.pixItem) {
                  var val = args.pixItem.replace('{{', '').replace('}}', '');
                  $('#pixItemField').data('savedKey', val);
+            }
+
+            // Payment Type & Boleto Restore
+            if (args.paymentType) {
+                $('#paymentType').val(args.paymentType).change();
+            }
+            if (args.boletoLine) {
+                 var val = args.boletoLine.replace('{{', '').replace('}}', '');
+                 $('#boletoLineField').data('savedKey', val);
             }
 
             // Salva o template selecionado para restaurar após o fetch
@@ -213,7 +233,11 @@ function onRequestedSchema(schema) {
     populateFields('#phoneField');
     populateFields('#pixKeyField');
     populateFields('#pixAmountField');
+    populateFields('#phoneField');
+    populateFields('#pixKeyField');
+    populateFields('#pixAmountField');
     populateFields('#pixItemField');
+    populateFields('#boletoLineField');
 }
 
 function populateFields(selectId) {
@@ -260,6 +284,17 @@ function onSave() {
     var pixItemField = $('#pixItemField').val();
     if (pixItemField) {
         inArguments.pixItem = '{{' + pixItemField + '}}';
+    }
+
+    // Payment Type
+    var paymentType = $('#paymentType').val();
+    inArguments.paymentType = paymentType;
+
+    if (paymentType === 'boleto') {
+        var boletoLineField = $('#boletoLineField').val();
+        if (boletoLineField) {
+            inArguments.boletoLine = '{{' + boletoLineField + '}}';
+        }
     }
     
 
