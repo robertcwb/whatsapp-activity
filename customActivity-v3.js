@@ -261,29 +261,44 @@ function onSave() {
         return;
     }
 
+    // Função auxiliar para evitar a quebra do Journey Builder ao usar Data Extension com espaços.
+    // Transforma `Event.DEAudience-xxxx.Link do contrato` em `Event.DEAudience-xxxx."Link do contrato"`
+    function sanitizeMCKey(key) {
+        if (!key) return key;
+        if (key.indexOf(' ') !== -1 && key.indexOf('"') === -1) {
+            var parts = key.split('.');
+            if (parts.length >= 2) {
+                var prefix = parts[0];
+                var fieldName = parts.slice(1).join('.');
+                return prefix + '."' + fieldName + '"';
+            }
+        }
+        return key;
+    }
+
     var inArguments = {
         templateName: template,
         phone_id: $('#phone_id').val() || null,
         languageCode: $('#langCode').val() || 'pt_BR',
         imageUrl: $('#imageUrl').val(),
         apiKey: '7a8e3bd0f4514d0e8a6bb31c41a79c32',
-        to: '{{' + phoneField + '}}'
+        to: '{{' + sanitizeMCKey(phoneField) + '}}'
     };
 
     // PIX
     var pixKeyField = $('#pixKeyField').val();
     if (pixKeyField) {
-        inArguments.pixKey = '{{' + pixKeyField + '}}';
+        inArguments.pixKey = '{{' + sanitizeMCKey(pixKeyField) + '}}';
     }
     
     var pixAmountField = $('#pixAmountField').val();
     if (pixAmountField) {
-        inArguments.pixAmount = '{{' + pixAmountField + '}}';
+        inArguments.pixAmount = '{{' + sanitizeMCKey(pixAmountField) + '}}';
     }
     
     var pixItemField = $('#pixItemField').val();
     if (pixItemField) {
-        inArguments.pixItem = '{{' + pixItemField + '}}';
+        inArguments.pixItem = '{{' + sanitizeMCKey(pixItemField) + '}}';
     }
 
     // Payment Type
@@ -293,7 +308,7 @@ function onSave() {
     if (paymentType === 'boleto') {
         var boletoLineField = $('#boletoLineField').val();
         if (boletoLineField) {
-            inArguments.boletoLine = '{{' + boletoLineField + '}}';
+            inArguments.boletoLine = '{{' + sanitizeMCKey(boletoLineField) + '}}';
         }
     }
     
@@ -305,7 +320,7 @@ function onSave() {
         var num = id.split('_')[1];  // 1
         var val = $(this).val();
         if (val) {
-            inArguments['var' + num] = '{{' + val + '}}';
+            inArguments['var' + num] = '{{' + sanitizeMCKey(val) + '}}';
         }
     });
 
