@@ -31,7 +31,7 @@ input, select {
     font-size: 13px;
     border: 1px solid #dddbda;
     border-radius: 4px;
-    background-color: #fff;
+    background-color: #000;
     color: #080707;
     transition: border-color .2s;
 }
