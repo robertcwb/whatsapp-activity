@@ -6,11 +6,11 @@
   "type": "REST",
   "lang": {
     "en": {
-      "name": "Send WhatsApp (Salesforce)",
+      "name": "Envio de Template",
       "description": "Sends a WhatsApp template using a Salesforce Apex class."
     },
     "pt-BR": {
-      "name": "Enviar Template (Salesforce)",
+      "name": "Envio de Template",
       "description": "Envia um template do WhatsApp usando uma classe Apex do Salesforce."
     }
   },
