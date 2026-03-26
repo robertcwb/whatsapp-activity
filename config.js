@@ -8,10 +8,10 @@ define([], function () {
         type: "REST",
         lang: {
             "en": {
-                name: "Enviar de Template"
+                name: "Enviar Template"
             },
             "pt-BR": {
-                name: "Enviar de Template"
+                name: "Enviar Template"
             }
         }
     };
