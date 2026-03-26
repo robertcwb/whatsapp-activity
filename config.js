@@ -8,10 +8,10 @@ define([], function () {
         type: "REST",
         lang: {
             "en": {
-                name: "Send WhatsApp (Salesforce)"
+                name: "Enviar de Template"
             },
             "pt-BR": {
-                name: "Enviar WhatsApp (Salesforce)"
+                name: "Enviar de Template"
             }
         }
     };
