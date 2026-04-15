@@ -6,12 +6,19 @@ define([], function () {
             category: "message"
         },
         type: "REST",
+        userInterfaces: {
+            configModal: {
+                height: 800,
+                width: 1000,
+                fullscreen: false
+            }
+        },
         lang: {
             "en": {
-                name: "Enviar Template"
+                name: "Send WhatsApp (Salesforce)"
             },
             "pt-BR": {
-                name: "Enviar Template"
+                name: "Enviar WhatsApp (Salesforce)"
             }
         }
     };
