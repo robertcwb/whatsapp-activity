@@ -2,7 +2,7 @@ define([], function () {
     return {
         workflowApiVersion: "1.1",
         metaData: {
-            icon: "images/icon.png",
+            icon: "https://www.flaticon.com/free-icon/apple_16566057?term=message&page=1&position=11&origin=search&related_id=16566057",
             category: "message"
         },
         type: "REST",
