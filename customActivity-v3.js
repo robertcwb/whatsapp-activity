@@ -170,59 +170,83 @@ function onTemplateChanged() {
         return;
     }
 
-    // 1. Acha o Corpo (BODY) do template
-    var bodyText = '';
-    console.log('🔍 Analisando template:', template);
+    // 1. Renderiza Prévia do Texto e acha variáveis do Corpo
+    var components = template.components || [];
+    var bodyComp = components.find(function(c) { return c.type === 'BODY' || c.type === 'body'; });
+    var headerComp = components.find(function(c) { return c.type === 'HEADER' || c.type === 'header'; });
+    var buttonsComp = components.find(function(c) { return c.type === 'BUTTONS' || c.type === 'buttons'; });
 
-    if (template.components && Array.isArray(template.components)) {
-        var bodyComp = template.components.find(function(c) { 
-            return c.type === 'BODY' || c.type === 'body'; 
-        });
-        if (bodyComp) bodyText = bodyComp.text || '';
-    } 
+    var bodyText = bodyComp ? (bodyComp.text || '') : '';
+    if (!bodyText && (template.body || template.text)) bodyText = template.body || template.text;
     
-    if (!bodyText && (template.body || template.text)) {
-         bodyText = template.body || template.text;
-    }
-    
-    console.log('📝 Texto detectado:', bodyText);
     $('#previewBody').text(bodyText || '(Template sem corpo de texto)');
     $preview.show();
-
-    // 2. Detecta variáveis {{n}}
-    var regex = /{{(\d+)}}/g;
-    var matches = [];
-    var m;
-    while ((m = regex.exec(bodyText)) !== null) {
-        if (matches.indexOf(m[1]) === -1) matches.push(m[1]);
-    }
-    matches.sort(); // Garante ordem 1, 2, 3...
-
-    // 3. Renderiza selects para cada variável
     $fields.empty();
-    if (matches.length > 0) {
-        matches.forEach(function(num) {
-            var label = 'Variável {{' + num + '}}';
-            var id = 'var_' + num;
+
+    var hasVars = false;
+
+    // 2. HEADER Vars
+    if (headerComp && headerComp.format === 'TEXT' && headerComp.text) {
+        var hRegex = /{{(\d+)}}/g;
+        var hMatch;
+        var hVars = [];
+        while ((hMatch = hRegex.exec(headerComp.text)) !== null) {
+            if (hVars.indexOf(hMatch[1]) === -1) hVars.push(hMatch[1]);
+        }
+        hVars.sort().forEach(function(num) {
+            hasVars = true;
+            renderVarField('Variável {{' + num + '}} (Cabeçalho)', 'headerVar_' + num);
+        });
+    }
+
+    // 3. BODY Vars
+    var bRegex = /{{(\d+)}}/g;
+    var bMatch;
+    var bVars = [];
+    while ((bMatch = bRegex.exec(bodyText)) !== null) {
+        if (bVars.indexOf(bMatch[1]) === -1) bVars.push(bMatch[1]);
+    }
+    bVars.sort().forEach(function(num) {
+        hasVars = true;
+        renderVarField('Variável {{' + num + '}}', 'var_' + num);
+    });
+
+    // 4. BUTTON Vars
+    if (buttonsComp && buttonsComp.buttons) {
+        buttonsComp.buttons.forEach(function(btn, index) {
+            var btnType = (btn.type || '').toUpperCase();
             
-            var html = '<div class="field-row">' +
-                       '<label for="' + id + '">' + label + '</label>' +
-                       '<select id="' + id + '" class="dynamic-var-select"></select>' +
-                       '</div>';
-            
-            $fields.append(html);
-            populateFields('#' + id);
-            
-            // Restaura valor se houver nos dados salvos
-            var savedVars = $('#templateSelect').data('savedVars');
-            if (savedVars && savedVars['var' + num]) {
-                var key = savedVars['var' + num].replace('{{', '').replace('}}', '');
-                $('#' + id).val(key);
+            if (btnType === 'URL' && btn.url && btn.url.indexOf('{{1}}') !== -1) {
+                hasVars = true;
+                renderVarField('Variável de URL (Botão ' + (index + 1) + ')', 'btnVar_' + index);
+            } else if (btnType === 'COPY_CODE') {
+                hasVars = true;
+                renderVarField('Código do Botão (Botão ' + (index + 1) + ')', 'btnVar_' + index);
             }
         });
+    }
+
+    if (hasVars) {
         $container.show();
     } else {
         $container.hide();
+    }
+
+    function renderVarField(label, id) {
+        var html = '<div class="field-row">' +
+                   '<label for="' + id + '">' + label + '</label>' +
+                   '<select id="' + id + '" class="dynamic-var-select"></select>' +
+                   '</div>';
+        $fields.append(html);
+        populateFields('#' + id);
+        
+        // Restaura valor se houver nos dados salvos
+        var savedVars = $('#templateSelect').data('savedVars') || {};
+        var savedKey = savedVars[id.replace('_', '')] || savedVars[id]; // tenta var1 ou var_1
+        if (savedKey) {
+            var keyStr = savedKey.replace('{{', '').replace('}}', '');
+            $('#' + id).val(keyStr);
+        }
     }
 }
 
@@ -316,11 +340,12 @@ function onSave() {
 
     // Coleta variáveis dinâmicas
     $('.dynamic-var-select').each(function() {
-        var id = $(this).attr('id'); // var_1
-        var num = id.split('_')[1];  // 1
+        var id = $(this).attr('id'); // e.g., var_1, headerVar_1, btnVar_0
         var val = $(this).val();
         if (val) {
-            inArguments['var' + num] = '{{' + sanitizeMCKey(val) + '}}';
+            // Remove o underscore para enviar ao Apex (e.g., var1, headerVar1)
+            var cleanId = id.replace('_', '');
+            inArguments[cleanId] = '{{' + sanitizeMCKey(val) + '}}';
         }
     });
 
