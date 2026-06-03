@@ -179,6 +179,28 @@ function onTemplateChanged() {
     var bodyText = bodyComp ? (bodyComp.text || '') : '';
     if (!bodyText && (template.body || template.text)) bodyText = template.body || template.text;
     
+    // Check for carousel component to update preview and generate fields
+    var carouselComp = components.find(function(c) { return c.type === 'CAROUSEL' || c.type === 'carousel'; });
+    if (carouselComp && carouselComp.cards) {
+        var cardsText = '[CARROSSEL: ' + carouselComp.cards.length + ' Cards]';
+        var cardDetails = [];
+        carouselComp.cards.forEach(function(card, idx) {
+            var cardComps = card.components || [];
+            var header = cardComps.find(function(comp) { return comp.type === 'HEADER' || comp.type === 'header'; });
+            var buttons = cardComps.find(function(comp) { return comp.type === 'BUTTONS' || comp.type === 'buttons'; });
+            var detail = '   • Card ' + (idx + 1) + ':';
+            if (header) {
+                detail += ' [' + header.format + ']';
+            }
+            if (buttons && buttons.buttons) {
+                var btnLabels = buttons.buttons.map(function(b) { return b.text; }).join(' | ');
+                detail += ' - Botões: (' + btnLabels + ')';
+            }
+            cardDetails.push(detail);
+        });
+        bodyText = cardsText + '\n' + cardDetails.join('\n') + '\n\n' + bodyText;
+    }
+
     $('#previewBody').text(bodyText || '(Template sem corpo de texto)');
     $preview.show();
     $fields.empty();
@@ -226,6 +248,42 @@ function onTemplateChanged() {
         });
     }
 
+    // 5. CAROUSEL Vars & Images
+    if (carouselComp && carouselComp.cards) {
+        carouselComp.cards.forEach(function(card, cardIdx) {
+            var cardComps = card.components || [];
+            
+            // Header Image/Video/Document
+            var cardHeader = cardComps.find(function(c) { return c.type === 'HEADER' || c.type === 'header'; });
+            if (cardHeader && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(cardHeader.format)) {
+                hasVars = true;
+                
+                // Get default URL from example if available
+                var defaultUrl = '';
+                if (cardHeader.example && cardHeader.example.header_handle && cardHeader.example.header_handle.length > 0) {
+                    defaultUrl = cardHeader.example.header_handle[0];
+                }
+                
+                renderCarouselImageField('Card ' + (cardIdx + 1) + ' - URL da Imagem', 'carouselCard' + cardIdx + 'headerUrl', defaultUrl);
+            }
+            
+            // Body variables
+            var cardBody = cardComps.find(function(c) { return c.type === 'BODY' || c.type === 'body'; });
+            if (cardBody && cardBody.text) {
+                var cRegex = /{{(\d+)}}/g;
+                var cMatch;
+                var cVars = [];
+                while ((cMatch = cRegex.exec(cardBody.text)) !== null) {
+                    if (cVars.indexOf(cMatch[1]) === -1) cVars.push(cMatch[1]);
+                }
+                cVars.sort().forEach(function(num) {
+                    hasVars = true;
+                    renderVarField('Card ' + (cardIdx + 1) + ' - Variável {{' + num + '}}', 'carouselCard' + cardIdx + 'var' + num);
+                });
+            }
+        });
+    }
+
     if (hasVars) {
         $container.show();
     } else {
@@ -233,9 +291,9 @@ function onTemplateChanged() {
     }
 
     function renderVarField(label, id) {
-        var html = '<div class="field-row">' +
-                   '<label for="' + id + '">' + label + '</label>' +
-                   '<select id="' + id + '" class="dynamic-var-select"></select>' +
+        var html = '<div class="field-row" style="margin-top: 10px;">' +
+                   '<label for="' + id + '" style="font-weight: bold;">' + label + '</label>' +
+                   '<select id="' + id + '" class="dynamic-var-select" style="width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ccc; border-radius: 4px;"></select>' +
                    '</div>';
         $fields.append(html);
         populateFields('#' + id);
@@ -246,6 +304,21 @@ function onTemplateChanged() {
         if (savedKey) {
             var keyStr = savedKey.replace('{{', '').replace('}}', '');
             $('#' + id).val(keyStr);
+        }
+    }
+
+    function renderCarouselImageField(label, id, defaultValue) {
+        var html = '<div class="field-row" style="margin-top: 10px;">' +
+                   '<label for="' + id + '" style="font-weight: bold;">' + label + '</label>' +
+                   '<input type="text" id="' + id + '" class="dynamic-var-input" placeholder="https://..." value="' + (defaultValue || '') + '" style="width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ccc; border-radius: 4px;" />' +
+                   '</div>';
+        $fields.append(html);
+        
+        // Restaura valor se houver nos dados salvos
+        var savedVars = $('#templateSelect').data('savedVars') || {};
+        var savedValue = savedVars[id] || savedVars[id.replace(/_/g, '')];
+        if (savedValue) {
+            $('#' + id).val(savedValue);
         }
     }
 }
@@ -346,6 +419,15 @@ function onSave() {
             // Remove o underscore para enviar ao Apex (e.g., var1, headerVar1)
             var cleanId = id.replace('_', '');
             inArguments[cleanId] = '{{' + sanitizeMCKey(val) + '}}';
+        }
+    });
+
+    // Coleta inputs estáticos / URLs do carrossel
+    $('.dynamic-var-input').each(function() {
+        var id = $(this).attr('id');
+        var val = $(this).val();
+        if (val) {
+            inArguments[id] = val;
         }
     });
 
