@@ -47,6 +47,7 @@ function onInit(payload) {
             $('#imageUrl').val(args.imageUrl || '');
             $('#phone_id').val(args.phone_id || '');
             $('#langCode').val(args.languageCode || 'pt_BR');
+            $('#abTest').prop('checked', args.isABTest === true || args.isABTest === 'true');
             
             // Atribui dados salvos para o telefone
             if (args.to) {
@@ -379,6 +380,7 @@ function onSave() {
         languageCode: $('#langCode').val() || 'pt_BR',
         imageUrl: $('#imageUrl').val(),
         apiKey: '7a8e3bd0f4514d0e8a6bb31c41a79c32',
+        isABTest: $('#abTest').is(':checked'),
         to: '{{' + sanitizeMCKey(phoneField) + '}}'
     };
 
