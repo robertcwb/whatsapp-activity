@@ -46,8 +46,10 @@ function onInit(payload) {
             // Backup dos valores salvos para restauração posterior
             $('#imageUrl').val(args.imageUrl || '');
             $('#phone_id').val(args.phone_id || '');
-            $('#langCode').val(args.languageCode || 'pt_BR');
-            $('#abTest').prop('checked', args.isABTest === true || args.isABTest === 'true');
+            if (args.bot_active) {
+                var key = args.bot_active.replace('{{', '').replace('}}', '');
+                $('#botActiveField').data('savedKey', key);
+            }
             
             // Atribui dados salvos para o telefone
             if (args.to) {
@@ -331,11 +333,9 @@ function onRequestedSchema(schema) {
     populateFields('#phoneField');
     populateFields('#pixKeyField');
     populateFields('#pixAmountField');
-    populateFields('#phoneField');
-    populateFields('#pixKeyField');
-    populateFields('#pixAmountField');
     populateFields('#pixItemField');
     populateFields('#boletoLineField');
+    populateFields('#botActiveField');
 }
 
 function populateFields(selectId) {
@@ -380,9 +380,13 @@ function onSave() {
         languageCode: $('#langCode').val() || 'pt_BR',
         imageUrl: $('#imageUrl').val(),
         apiKey: '7a8e3bd0f4514d0e8a6bb31c41a79c32',
-        isABTest: $('#abTest').is(':checked'),
         to: '{{' + sanitizeMCKey(phoneField) + '}}'
     };
+
+    var botActiveField = $('#botActiveField').val();
+    if (botActiveField) {
+        inArguments.bot_active = '{{' + sanitizeMCKey(botActiveField) + '}}';
+    }
 
     // PIX
     var pixKeyField = $('#pixKeyField').val();
